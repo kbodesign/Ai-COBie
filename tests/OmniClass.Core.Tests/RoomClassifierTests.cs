@@ -67,12 +67,25 @@ namespace OmniClass.Core.Tests
             Assert.True(result.Candidates.Count > 1);
         }
 
+        [Fact]
+        public void CharacterDriftAloneIsNotEnoughToBeACandidate()
+        {
+            // "BREAKROOM" is three edits from "RESTROOM", which scores respectably as a
+            // ratio and is a completely different room.
+            var result = Restrooms().Classify("Break Room");
+
+            Assert.Equal(MatchStatus.Unmatched, result.Status);
+            Assert.Empty(result.Candidates);
+        }
+
         [Theory]
         [InlineData("Corridor")]
         [InlineData("Corridor 101")]
         [InlineData("Stair")]
         [InlineData("Storage")]
         [InlineData("Electrical Room")]
+        [InlineData("Work Room")]
+        [InlineData("Dining Room")]
         public void ShortAliasesNeverMatchUnrelatedRoomsBySubstring(string roomName)
         {
             // "RR" must not classify a corridor and "WR" must not classify a work room.

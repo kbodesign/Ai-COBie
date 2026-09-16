@@ -20,6 +20,12 @@ namespace OmniClass.Core.Matching
         /// </summary>
         public double TieMargin { get; set; } = 0.05;
 
+        /// <summary>
+        /// How far the character tier is allowed to reach. Two edits covers plurals and
+        /// typing slips; beyond that a name is a different name, not a misspelling.
+        /// </summary>
+        public int MaxEditDistance { get; set; } = 2;
+
         public int MaxCandidates { get; set; } = 5;
 
         public static ClassifierOptions Default { get; } = new ClassifierOptions();
@@ -76,8 +82,10 @@ namespace OmniClass.Core.Matching
 
             foreach (var alias in _dictionary.Aliases)
             {
+                // Both tiers require real overlap: a shared whole word, or a spelling that is
+                // within a couple of edits. Neither can match on a substring.
                 var score = Math.Max(
-                    StringSimilarity.Characters(key, alias.Key),
+                    StringSimilarity.Characters(key, alias.Key, _options.MaxEditDistance),
                     StringSimilarity.Tokens(tokens, alias.Tokens));
 
                 if (score >= _options.ReviewThreshold) scored.Add(new MatchCandidate(alias, score));

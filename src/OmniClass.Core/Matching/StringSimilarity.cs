@@ -10,12 +10,20 @@ namespace OmniClass.Core.Matching
         /// 1.0 for identical strings, scaled down by edit distance. Catches plurals and
         /// typos ("Restrooms", "Resroom") without any substring behaviour.
         /// </summary>
-        public static double Characters(string left, string right)
+        /// <param name="maxDistance">
+        /// Anything further away than this scores zero. Without a cap, a long name drifts
+        /// far enough to look similar to an unrelated one: "BREAKROOM" is three edits from
+        /// "RESTROOM", which is a respectable 0.67 ratio and a completely different room.
+        /// </param>
+        public static double Characters(string left, string right, int maxDistance = int.MaxValue)
         {
             if (string.IsNullOrEmpty(left) || string.IsNullOrEmpty(right)) return 0d;
             if (string.Equals(left, right, StringComparison.Ordinal)) return 1d;
+            if (Math.Abs(left.Length - right.Length) > maxDistance) return 0d;
 
             var distance = Levenshtein(left, right);
+            if (distance > maxDistance) return 0d;
+
             var longest = Math.Max(left.Length, right.Length);
             return 1d - (double)distance / longest;
         }
