@@ -178,6 +178,45 @@ Room Data panel. Uninstall with `.\install\Install-OmniClassRooms.ps1 -Uninstall
 Point `dictionary` in `OmniClass.Rooms.config` at the office copy of `room_aliases.csv` so
 every project classifies the same way.
 
+### Manual install
+
+Yes — that is all the installer does. Revit reads `.addin` files from the year folder; it
+does not look inside subfolders, so the `.addin` file sits in the year folder and the DLLs
+live in `OmniClassRooms` next to it.
+
+1. Build (`dotnet build -c Release`).
+2. Copy **these files only** from the matching build output:
+
+   | Revit | Copy from |
+   | --- | --- |
+   | 2023 or 2024 | `src/OmniClass.Revit/bin/Release/net48/` |
+   | 2025 or 2026 | `src/OmniClass.Revit/bin/Release/net8.0-windows/` |
+
+3. Arrange them like this (example is Revit 2024; change `2024` to your year):
+
+```
+%AppData%\Autodesk\Revit\Addins\2024\
+  OmniClass.Rooms.addin
+  OmniClassRooms\
+    OmniClass.Revit.dll
+    OmniClass.Core.dll
+    OmniClass.Rooms.config
+    data\
+      room_aliases.csv
+```
+
+The `.addin` file is `install/OmniClass.Rooms.addin`. Its `<Assembly>` path is
+`OmniClassRooms/OmniClass.Revit.dll`, relative to the `.addin` file, so the folder name
+must be `OmniClassRooms`. Do not copy `RevitAPI.dll` or `RevitAPIUI.dll` — Revit already
+provides those.
+
+For every user on the machine, use `C:\ProgramData\Autodesk\Revit\Addins\<year>\` instead
+of `%AppData%`. Restart Revit after copying.
+
+To load the same copy for several years, put the DLLs in one folder and give each year's
+`.addin` an absolute `<Assembly>` path. 2023/2024 still need the `net48` build; 2025/2026
+still need the `net8.0-windows` build.
+
 ## What the add-in writes
 
 Rooms have no built-in OmniClass parameters — Revit's built-ins are Table 23 and apply to
