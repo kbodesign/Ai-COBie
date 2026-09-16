@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- netstandard2.0 so the same binary loads under .NET Framework 4.8 (Revit 2022-2024)
+         and .NET 8 (Revit 2025+). Keep this project free of any Revit references. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <RootNamespace>OmniClass.Core</RootNamespace>
+    <AssemblyName>OmniClass.Core</AssemblyName>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+
+</Project>

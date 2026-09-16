@@ -1,0 +1,5 @@
+Number,Title,Level,Alias 1,Alias 2,Alias 3,Alias 4,Alias 5,Alias 6
+13-23 17,Restroom,3,RR,R Room,RestRoom,Rest_Room,Toilet,WC
+13-23 17 11,Men's Restroom,4,MR,M Room,Men's Restroom,Men's-Restroom,Mens Toilet,Gents
+13-23 17 13,Women's Restroom,4,WR,W Room,Women's Restroom,Women's_Restroom,Womens Toilet,Ladies
+13-23 17 15,Unisex Restroom,4,XR,NB,Unisex Restroom,Unisex-Restroom,All Gender Restroom,Gender Neutral Restroom
