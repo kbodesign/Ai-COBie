@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>OmniClass Room Classification</Name>
+    <Assembly>OmniClassRooms/OmniClass.Revit.dll</Assembly>
+    <AddInId>8f3c2a91-6b14-4d7e-9c5a-1e0b8d4f7a22</AddInId>
+    <FullClassName>OmniClass.Revit.App</FullClassName>
+    <VendorId>KBOD</VendorId>
+    <VendorDescription>KB Design, https://github.com/kbodesign/Ai-COBie</VendorDescription>
+  </AddIn>
+</RevitAddIns>

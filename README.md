@@ -5,9 +5,9 @@ room name people actually typed to a curated list of aliases, so `Restroom`, `Re
 `Rest_Room`, `RR` and `R Room` all resolve to `13-23 17: Restroom` without anyone picking
 from a list of thousands.
 
-**Current state:** the matching engine, the dictionary format and its validator are built
-and tested. There is no Revit add-in yet — see [Revit integration](#revit-integration) for
-what that needs and why it is second.
+**Current state:** the matching engine and a Revit add-in are both in the repo. The add-in
+lands on the **Arch Tools** ribbon, in a panel named **Room Data**, with Classify Rooms and
+Harvest Names. See [Install the add-in](#install-the-add-in).
 
 ## Why the spreadsheet layout changed
 
@@ -145,38 +145,58 @@ Two things to watch:
 ## Layout
 
 ```
-src/OmniClass.Core     Matching engine. netstandard2.0, no Revit references, 107 tests.
+src/OmniClass.Core     Matching engine. netstandard2.0, no Revit references.
+src/OmniClass.Revit    Add-in: Arch Tools > Room Data. net48 (2023-24) and net8 (2025-26).
 tools/OmniClass.Cli    validate / audit / classify against schedule exports.
+install/               .addin manifest and PowerShell installer.
 data/                  The alias dictionary and a sample room schedule.
 tests/                 Unit tests, including "the shipped dictionary has no errors".
 ```
 
 `OmniClass.Core` targets `netstandard2.0` so one binary loads under both .NET Framework 4.8
-(Revit 2022–2024) and .NET 8 (Revit 2025+).
+(Revit 2023–2024) and .NET 8 (Revit 2025+).
 
-## Revit integration
+## Install the add-in
 
-Deliberately not built yet — the matching rules are worth agreeing on first, and the audit
-half needs no Revit API at all. When it is built, these are the things that decide whether
-it survives contact with a real project:
+Build, then from PowerShell on a machine that has Revit:
 
-- **Rooms have no built-in OmniClass parameters.** Revit's built-in OmniClass Number and
-  Title apply to loadable family types and are Table 23. Rooms need **shared** parameters
-  bound to the Room category as instance text — shared, not project, so they can be
-  scheduled and survive IFC and ODBC export.
-- **Preview before writing.** A dialog listing room, proposed number and title, confidence
-  and action, with Apply on the selection. Not fire-and-forget.
-- **Skip what cannot be classified**: unplaced and redundant rooms (zero area), and rooms
-  whose name is only a number.
-- **Do not overwrite** a room that already has a value unless the user opts in.
-- **Handle worksharing.** A room owned by someone else should be reported as skipped, not
-  throw. One transaction group so the whole run is a single undo.
-- **Stamp what was applied.** Record which dictionary version classified the model, so a
-  later correction can find the rooms it affected.
+```powershell
+dotnet build -c Release
+.\install\Install-OmniClassRooms.ps1
+```
 
-Worth evaluating first: Autodesk's free **Classification Manager for Revit** already does
-Excel-driven classification assignment. It does not do name-alias matching, which is the
-part that saves the time, but it may cover the writing half.
+That copies the add-in into `%AppData%\Autodesk\Revit\Addins\<year>\` for 2023 through 2026.
+Restart Revit. The buttons are on **Arch Tools → Room Data**:
+
+- **Classify Rooms** — match every room, preview, write the checked rows.
+- **Harvest Names** — export distinct room names ranked by frequency, which is the list
+  to add to the dictionary.
+
+If another add-in already created an Arch Tools tab, this one reuses it and only adds the
+Room Data panel. Uninstall with `.\install\Install-OmniClassRooms.ps1 -Uninstall`.
+
+Point `dictionary` in `OmniClass.Rooms.config` at the office copy of `room_aliases.csv` so
+every project classifies the same way.
+
+## What the add-in writes
+
+Rooms have no built-in OmniClass parameters — Revit's built-ins are Table 23 and apply to
+loadable family types. This add-in binds two **shared** instance parameters on the Room
+category, with fixed GUIDs so they are the same parameter in every project:
+
+- `OmniClass Number`
+- `OmniClass Title`
+
+Shared, not project, so they can be scheduled and they survive IFC and ODBC export (which
+is what the COBie side of this repo needs). Names are configurable in `OmniClass.Rooms.config`.
+
+The classify preview pre-selects only exact dictionary hits. Probable and ambiguous matches
+are listed for review. Unplaced rooms, not-enclosed rooms, rooms owned by another user, and
+rooms that already have a value are left alone unless `overwriteExisting = true`. The whole
+write is one undo.
+
+Dictionary version stamping is not in yet: a later pass should record which dictionary
+classified the model so a correction can find the rooms it touched.
 
 ## Upstream fix
 
