@@ -1,6 +1,7 @@
 using System;
 using Autodesk.Revit.UI;
 using OmniClass.Core.Configuration;
+using RevitArgumentException = Autodesk.Revit.Exceptions.ArgumentException;
 
 namespace OmniClass.Revit.Ribbon
 {
@@ -16,14 +17,7 @@ namespace OmniClass.Revit.Ribbon
         {
             if (application == null) throw new ArgumentNullException(nameof(application));
 
-            try
-            {
-                application.CreateRibbonTab(RibbonPlacement.Tab);
-            }
-            catch (ArgumentException)
-            {
-                // Tab already exists - that is the common case once other Arch Tools are installed.
-            }
+            EnsureTab(application, RibbonPlacement.Tab);
 
             foreach (var panel in application.GetRibbonPanels(RibbonPlacement.Tab))
             {
@@ -31,7 +25,50 @@ namespace OmniClass.Revit.Ribbon
                     return panel;
             }
 
-            return application.CreateRibbonPanel(RibbonPlacement.Tab, RibbonPlacement.Panel);
+            try
+            {
+                return application.CreateRibbonPanel(RibbonPlacement.Tab, RibbonPlacement.Panel);
+            }
+            catch (RevitArgumentException)
+            {
+                foreach (var panel in application.GetRibbonPanels(RibbonPlacement.Tab))
+                {
+                    if (string.Equals(panel.Name, RibbonPlacement.Panel, StringComparison.OrdinalIgnoreCase))
+                        return panel;
+                }
+
+                throw;
+            }
+        }
+
+        private static void EnsureTab(UIControlledApplication application, string tab)
+        {
+            if (TabExists(application, tab)) return;
+
+            try
+            {
+                application.CreateRibbonTab(tab);
+            }
+            catch (RevitArgumentException)
+            {
+                // Another add-in created the tab between the check and the create.
+                // Revit throws Autodesk.Revit.Exceptions.ArgumentException here, which
+                // does not inherit from System.ArgumentException, so catching the
+                // system type lets the add-in fail to load.
+            }
+        }
+
+        private static bool TabExists(UIControlledApplication application, string tab)
+        {
+            try
+            {
+                application.GetRibbonPanels(tab);
+                return true;
+            }
+            catch (RevitArgumentException)
+            {
+                return false;
+            }
         }
     }
 }
