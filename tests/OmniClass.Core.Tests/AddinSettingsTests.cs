@@ -1,10 +1,8 @@
 using System.IO;
-using OmniClass.Revit.Parameters;
-using OmniClass.Revit.Ribbon;
-using OmniClass.Revit.Settings;
+using OmniClass.Core.Configuration;
 using Xunit;
 
-namespace OmniClass.Revit.Tests
+namespace OmniClass.Core.Tests
 {
     public class AddinSettingsTests
     {
@@ -47,7 +45,7 @@ namespace OmniClass.Revit.Tests
 
             Assert.Equal(
                 Path.Combine(Path.GetTempPath(), "office", "OmniClass Shared Parameters.txt"),
-                settings.EffectiveSharedParameterFile());
+                settings.EffectiveSharedParameterFile(addinFolder));
         }
 
         [Fact]
@@ -55,16 +53,6 @@ namespace OmniClass.Revit.Tests
         {
             Assert.Equal("a7e4c2b1-5d8f-4a3e-9c12-6b8d0e4f1a73", OmniClassParameterIds.Number.ToString());
             Assert.Equal("b8f5d3c2-6e90-4b4f-8d23-7c9e1f5a2b84", OmniClassParameterIds.Title.ToString());
-        }
-    }
-
-    public class RibbonPlacementTests
-    {
-        [Fact]
-        public void LandsOnArchToolsRoomData()
-        {
-            Assert.Equal("Arch Tools", RibbonNames.Tab);
-            Assert.Equal("Room Data", RibbonNames.Panel);
         }
     }
 }

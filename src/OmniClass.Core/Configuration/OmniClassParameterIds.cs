@@ -1,6 +1,6 @@
 using System;
 
-namespace OmniClass.Revit.Parameters
+namespace OmniClass.Core.Configuration
 {
     /// <summary>
     /// Fixed GUIDs so OmniClass Number and Title are the same shared parameters in every

@@ -2,10 +2,10 @@ using System;
 using System.IO;
 using System.Reflection;
 
-namespace OmniClass.Revit.Settings
+namespace OmniClass.Core.Configuration
 {
     /// <summary>
-    /// Plain key=value settings read from a file beside the assembly. Deliberately not JSON:
+    /// Plain key=value settings read from a file beside the add-in. Deliberately not JSON:
     /// Revit loads every add-in into one process, so pulling in a serializer invites the
     /// assembly version conflicts that make add-ins fail in ways nobody can diagnose.
     /// </summary>
@@ -19,14 +19,13 @@ namespace OmniClass.Revit.Settings
         public string SharedParameterFilePath { get; private set; }
         public bool OverwriteExisting { get; private set; }
 
-        public static string AssemblyFolder =>
-            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
-        public static AddinSettings Load()
+        public static AddinSettings Load(string assemblyFolder)
         {
-            var folder = AssemblyFolder;
-            var path = Path.Combine(folder, FileName);
-            return File.Exists(path) ? LoadFrom(File.ReadAllText(path), folder) : Defaults(folder);
+            if (string.IsNullOrEmpty(assemblyFolder))
+                assemblyFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+            var path = Path.Combine(assemblyFolder, FileName);
+            return File.Exists(path) ? LoadFrom(File.ReadAllText(path), assemblyFolder) : Defaults(assemblyFolder);
         }
 
         public static AddinSettings LoadFrom(string contents, string folder)
@@ -81,14 +80,14 @@ namespace OmniClass.Revit.Settings
         /// Where a generated shared parameter file goes when none is configured: beside the
         /// dictionary, so the definitions travel with the data they describe.
         /// </summary>
-        public string EffectiveSharedParameterFile()
+        public string EffectiveSharedParameterFile(string fallbackFolder = null)
         {
             if (!string.IsNullOrEmpty(SharedParameterFilePath)) return SharedParameterFilePath;
 
             var folder = Path.GetDirectoryName(DictionaryPath);
-            if (string.IsNullOrEmpty(folder)) folder = AssemblyFolder;
+            if (string.IsNullOrEmpty(folder)) folder = fallbackFolder;
 
-            return Path.Combine(folder, "OmniClass Shared Parameters.txt");
+            return Path.Combine(folder ?? string.Empty, "OmniClass Shared Parameters.txt");
         }
 
         private static string Resolve(string folder, string value)

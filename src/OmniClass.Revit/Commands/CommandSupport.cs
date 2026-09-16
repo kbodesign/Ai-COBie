@@ -3,9 +3,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Autodesk.Revit.UI;
+using OmniClass.Core.Configuration;
 using OmniClass.Core.Loading;
 using OmniClass.Core.Model;
-using OmniClass.Revit.Settings;
 
 namespace OmniClass.Revit.Commands
 {
@@ -13,7 +13,7 @@ namespace OmniClass.Revit.Commands
     {
         public static AddinSettings SettingsOrWarn()
         {
-            return AddinSettings.Load();
+            return AddinSettings.Load(Path.GetDirectoryName(typeof(OmniClass.Revit.App).Assembly.Location));
         }
 
         public static ClassificationDictionary TryLoadDictionary(AddinSettings settings, bool warnIfMissing, bool requireClean)

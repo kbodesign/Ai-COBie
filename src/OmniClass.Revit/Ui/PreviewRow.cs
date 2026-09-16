@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using OmniClass.Core.Matching;
 using OmniClass.Revit.Rooms;
-using OmniClass.Revit.Settings;
+using OmniClass.Core.Configuration;
 
 namespace OmniClass.Revit.Ui
 {

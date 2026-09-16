@@ -1,5 +1,6 @@
 using System;
 using Autodesk.Revit.UI;
+using OmniClass.Core.Configuration;
 
 namespace OmniClass.Revit.Ribbon
 {
@@ -11,29 +12,26 @@ namespace OmniClass.Revit.Ribbon
     /// </summary>
     internal static class ArchToolsRibbon
     {
-        public const string TabName = RibbonNames.Tab;
-        public const string PanelName = RibbonNames.Panel;
-
         public static RibbonPanel GetOrCreatePanel(UIControlledApplication application)
         {
             if (application == null) throw new ArgumentNullException(nameof(application));
 
             try
             {
-                application.CreateRibbonTab(RibbonNames.Tab);
+                application.CreateRibbonTab(RibbonPlacement.Tab);
             }
             catch (ArgumentException)
             {
                 // Tab already exists - that is the common case once other Arch Tools are installed.
             }
 
-            foreach (var panel in application.GetRibbonPanels(RibbonNames.Tab))
+            foreach (var panel in application.GetRibbonPanels(RibbonPlacement.Tab))
             {
-                if (string.Equals(panel.Name, RibbonNames.Panel, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(panel.Name, RibbonPlacement.Panel, StringComparison.OrdinalIgnoreCase))
                     return panel;
             }
 
-            return application.CreateRibbonPanel(RibbonNames.Tab, RibbonNames.Panel);
+            return application.CreateRibbonPanel(RibbonPlacement.Tab, RibbonPlacement.Panel);
         }
     }
 }

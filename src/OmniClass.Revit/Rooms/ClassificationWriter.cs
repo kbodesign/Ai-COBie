@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using OmniClass.Revit.Rooms;
-using OmniClass.Revit.Settings;
+using OmniClass.Core.Configuration;
 using OmniClass.Revit.Ui;
 
 namespace OmniClass.Revit.Rooms

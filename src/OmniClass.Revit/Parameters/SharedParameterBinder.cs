@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using Autodesk.Revit.DB;
-using OmniClass.Revit.Settings;
+using OmniClass.Core.Configuration;
 
 namespace OmniClass.Revit.Parameters
 {
