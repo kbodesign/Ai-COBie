@@ -46,8 +46,8 @@
         <DataGridTextColumn Header="Name" Binding="{Binding RoomName}" IsReadOnly="True" Width="160"/>
         <DataGridTextColumn Header="Level" Binding="{Binding LevelName}" IsReadOnly="True" Width="100"/>
         <DataGridTextColumn Header="Status" Binding="{Binding Status}" IsReadOnly="True" Width="90"/>
-        <DataGridTextColumn Header="OmniClass Number" Binding="{Binding ProposedNumber}" IsReadOnly="True" Width="130"/>
-        <DataGridTextColumn Header="OmniClass Title" Binding="{Binding ProposedTitle}" IsReadOnly="True" Width="150"/>
+        <DataGridTextColumn Header="Classification Number" Binding="{Binding ProposedNumber}" IsReadOnly="True" Width="140"/>
+        <DataGridTextColumn Header="Classification Name" Binding="{Binding ProposedTitle}" IsReadOnly="True" Width="150"/>
         <DataGridTextColumn Header="Matched as" Binding="{Binding MatchedAlias}" IsReadOnly="True" Width="120"/>
         <DataGridTextColumn Header="Score" Binding="{Binding Score}" IsReadOnly="True" Width="60"/>
         <DataGridTextColumn Header="Current Number" Binding="{Binding CurrentNumber}" IsReadOnly="True" Width="120"/>

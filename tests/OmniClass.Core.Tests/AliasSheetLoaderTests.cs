@@ -27,6 +27,18 @@ namespace OmniClass.Core.Tests
         }
 
         [Fact]
+        public void NewSheetPutsRoomNamesInColumnC()
+        {
+            var dictionary = Fixture.Load(
+                "Number,Name,Room Name 1,Room Name 2\n" +
+                "13-23 17,Restroom,RR,R Room\n");
+
+            Assert.False(dictionary.HasErrors);
+            Assert.Equal("13-23 17", dictionary.FindExact("RR").Entry.Number.Canonical);
+            Assert.Equal("13-23 17", dictionary.FindExact("RROOM").Entry.Number.Canonical);
+        }
+
+        [Fact]
         public void TitleIsAlwaysAnAliasEvenWhenNotRepeatedInAnAliasColumn()
         {
             var dictionary = Fixture.Load(

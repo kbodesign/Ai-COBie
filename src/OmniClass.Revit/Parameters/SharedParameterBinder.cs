@@ -6,9 +6,9 @@ using OmniClass.Core.Configuration;
 namespace OmniClass.Revit.Parameters
 {
     /// <summary>
-    /// Binds OmniClass Number and Title as instance shared parameters on the Room
-    /// category. Shared, not project: they can be scheduled and they survive IFC and
-    /// ODBC export, which is what the COBie side of this work needs.
+    /// Writes onto Classification.Space.Number, Classification.Space.Description and
+    /// COBie.Space.Category. If those parameters already exist in the template they are
+    /// reused; they are only created when the project does not already have them.
     /// </summary>
     internal static class SharedParameterBinder
     {
@@ -16,6 +16,16 @@ namespace OmniClass.Revit.Parameters
         {
             if (document == null) throw new ArgumentNullException(nameof(document));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
+
+            BindIfMissing(document, settings, settings.NumberParameterName, OmniClassParameterIds.Number);
+            BindIfMissing(document, settings, settings.TitleParameterName, OmniClassParameterIds.Title);
+            BindIfMissing(document, settings, settings.CategoryParameterName, OmniClassParameterIds.Category);
+        }
+
+        private static void BindIfMissing(Document document, AddinSettings settings, string name, Guid guid)
+        {
+            if (string.IsNullOrEmpty(name)) return;
+            if (ProjectHasParameter(document, name)) return;
 
             var application = document.Application;
             var path = settings.EffectiveSharedParameterFile();
@@ -30,19 +40,28 @@ namespace OmniClass.Revit.Parameters
                                "Revit could not open the shared parameter file at '" + path + "'.");
 
                 var group = GetOrCreateGroup(file, OmniClassParameterIds.GroupName);
-                var number = GetOrCreateDefinition(group, settings.NumberParameterName, OmniClassParameterIds.Number);
-                var title = GetOrCreateDefinition(group, settings.TitleParameterName, OmniClassParameterIds.Title);
-
-                BindToRooms(document, number);
-                BindToRooms(document, title);
+                var definition = GetOrCreateDefinition(group, name, guid);
+                BindToRooms(document, definition);
             }
             finally
             {
-                // Put the user's shared parameter file back. Leaving ours in place would
-                // surprise every other tool they use in the same session.
                 if (!string.IsNullOrEmpty(previous) && File.Exists(previous))
                     application.SharedParametersFilename = previous;
             }
+        }
+
+        private static bool ProjectHasParameter(Document document, string name)
+        {
+            var iterator = document.ParameterBindings.ForwardIterator();
+            iterator.Reset();
+            while (iterator.MoveNext())
+            {
+                var definition = iterator.Key;
+                if (definition != null && string.Equals(definition.Name, name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
 
         private static DefinitionGroup GetOrCreateGroup(DefinitionFile file, string name)
@@ -68,8 +87,9 @@ namespace OmniClass.Revit.Parameters
                 {
                     throw new InvalidOperationException(
                         "Shared parameter '" + name + "' already exists with GUID " + external.GUID +
-                        ", which is not the GUID this add-in uses. Rename the existing parameter or " +
-                        "point sharedParameterFile at a dedicated file in OmniClass.Rooms.config.");
+                        ", which is not the GUID this add-in uses. Point sharedParameterFile at a " +
+                        "dedicated file in OmniClass.Rooms.config, or use the parameters already " +
+                        "in the project template.");
                 }
 
                 return existing;
@@ -106,7 +126,6 @@ namespace OmniClass.Revit.Parameters
             var folder = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
 
-            // Revit will not open a truly empty file as a shared parameter file.
             File.WriteAllText(path,
                 "# This is a Revit shared parameter file.\r\n" +
                 "*META\tVERSION\tMINVERSION\r\n" +

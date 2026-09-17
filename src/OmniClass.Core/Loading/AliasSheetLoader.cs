@@ -17,8 +17,12 @@ namespace OmniClass.Core.Loading
     {
         public const int NumberColumn = 0;
         public const int TitleColumn = 1;
-        public const int LevelColumn = 2;
-        public const int FirstAliasColumn = 3;
+
+        /// <summary>
+        /// Column C is the first room-name option, unless it is a leftover level digit
+        /// from the older sheet (1-6), in which case aliases start at D.
+        /// </summary>
+        public const int FirstAliasColumn = 2;
 
         public static ClassificationDictionary LoadFile(string path, NormalizerOptions options = null)
         {
@@ -59,7 +63,7 @@ namespace OmniClass.Core.Loading
                 entries.Add(entry);
                 entriesByNumber[entry.Number.Canonical] = entry;
 
-                CheckLevelColumn(row, rowNumber, entry, messages);
+                CheckOptionalLevelColumn(row, rowNumber, entry, messages);
                 ReadAliases(row, rowNumber, entry, aliasesByKey, aliases, messages, options);
             }
 
@@ -106,19 +110,32 @@ namespace OmniClass.Core.Loading
             return new OmniClassEntry(number, title, rowNumber);
         }
 
-        private static void CheckLevelColumn(string[] row, int rowNumber, OmniClassEntry entry, List<ValidationMessage> messages)
+        /// <summary>
+        /// Older sheets stored a level digit in column C. New sheets put the first room
+        /// name there. A cell that is only 1-6 is treated as the old level column.
+        /// </summary>
+        internal static int AliasStartColumn(string[] row)
         {
-            var rawLevel = DelimitedText.Cell(row, LevelColumn);
-            if (rawLevel.Length == 0) return;
+            return LooksLikeLevelCell(DelimitedText.Cell(row, FirstAliasColumn)) ? 3 : 2;
+        }
 
-            if (!int.TryParse(rawLevel, out var declared) || declared != entry.Number.Depth)
-            {
-                messages.Add(new ValidationMessage(
-                    ValidationSeverity.Warning, "LevelMismatch",
-                    $"Level says '{rawLevel}' but {entry.Number} is level {entry.Number.Depth}. " +
-                    "Level is derived from the number, so this column can be dropped.",
-                    rowNumber, ColumnName(LevelColumn)));
-            }
+        private static bool LooksLikeLevelCell(string value)
+        {
+            return int.TryParse(value, out var level) && level >= 1 && level <= 6;
+        }
+
+        private static void CheckOptionalLevelColumn(string[] row, int rowNumber, OmniClassEntry entry, List<ValidationMessage> messages)
+        {
+            if (AliasStartColumn(row) != 3) return;
+
+            var rawLevel = DelimitedText.Cell(row, FirstAliasColumn);
+            if (!int.TryParse(rawLevel, out var declared) || declared == entry.Number.Depth) return;
+
+            messages.Add(new ValidationMessage(
+                ValidationSeverity.Warning, "LevelMismatch",
+                $"Level says '{rawLevel}' but {entry.Number} is level {entry.Number.Depth}. " +
+                "Level is derived from the number, so this column can be dropped.",
+                rowNumber, ColumnName(FirstAliasColumn)));
         }
 
         private static void ReadAliases(
@@ -137,7 +154,7 @@ namespace OmniClass.Core.Loading
                 new KeyValuePair<string, int>(entry.Title, TitleColumn)
             };
 
-            for (var column = FirstAliasColumn; column < row.Length; column++)
+            for (var column = AliasStartColumn(row); column < row.Length; column++)
             {
                 var value = DelimitedText.Cell(row, column);
                 if (value.Length > 0) candidates.Add(new KeyValuePair<string, int>(value, column));

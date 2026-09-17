@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using OmniClass.Revit.Rooms;
 using OmniClass.Core.Configuration;
+using OmniClass.Core.Model;
 using OmniClass.Revit.Ui;
 
 namespace OmniClass.Revit.Rooms
@@ -34,16 +34,20 @@ namespace OmniClass.Revit.Rooms
 
                 var number = room.LookupParameter(settings.NumberParameterName);
                 var title = room.LookupParameter(settings.TitleParameterName);
+                var category = string.IsNullOrEmpty(settings.CategoryParameterName)
+                    ? null
+                    : room.LookupParameter(settings.CategoryParameterName);
 
                 if (number == null || title == null)
                 {
                     result.Skipped++;
                     result.Failures.Add(row.RoomNumber + " " + row.RoomName +
-                                        ": OmniClass parameters are not bound on this room.");
+                                        ": " + settings.NumberParameterName + " or " +
+                                        settings.TitleParameterName + " is not on this room.");
                     continue;
                 }
 
-                if (number.IsReadOnly || title.IsReadOnly)
+                if (number.IsReadOnly || title.IsReadOnly || (category != null && category.IsReadOnly))
                 {
                     result.Skipped++;
                     result.Failures.Add(row.RoomNumber + " " + row.RoomName + ": parameter is read-only.");
@@ -54,6 +58,8 @@ namespace OmniClass.Revit.Rooms
                 {
                     number.Set(row.ProposedNumber);
                     title.Set(row.ProposedTitle);
+                    if (category != null)
+                        category.Set(OmniClassFormatting.Category(row.ProposedNumber, row.ProposedTitle));
                     result.Written++;
                 }
                 catch (Exception ex)

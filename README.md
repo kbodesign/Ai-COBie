@@ -121,13 +121,17 @@ Use `--column` to choose explicitly.
 
 ## The dictionary file
 
-`data/room_aliases.csv` — number, title, level, then as many alias columns as you like:
+`data/room_aliases.csv` — Number and Name in columns A and B, then each room-name
+option in C, D, E, … so the sheet grows like a small database:
 
 ```csv
-Number,Title,Level,Alias 1,Alias 2,Alias 3,Alias 4,Alias 5,Alias 6
-13-23 17,Restroom,3,RR,R Room,RestRoom,Rest_Room,Toilet,WC
-13-23 17 11,Men's Restroom,4,MR,M Room,Men's Restroom,Men's-Restroom,Mens Toilet,Gents
+Number,Name,Room Name 1,Room Name 2,Room Name 3,Room Name 4,Room Name 5,Room Name 6
+13-23 17,Restroom,RR,R Room,RestRoom,Rest_Room,Toilet,WC
+13-23 17 11,Men's Restroom,MR,M Room,Men's Restroom,Men's-Restroom,Mens Toilet,Gents
 ```
+
+Harvest Names writes this same layout, so you can paste new spellings into the next
+empty column. An older sheet that still has a level digit in column C is still accepted.
 
 The title is always an alias whether or not it is repeated in an alias column.
 
@@ -176,15 +180,14 @@ To rebuild the zips after changing code: `dotnet build -c Release` then `.\insta
 
 ## What the add-in writes
 
-Rooms have no built-in OmniClass parameters — Revit's built-ins are Table 23 and apply to
-loadable family types. This add-in binds two **shared** instance parameters on the Room
-category, with fixed GUIDs so they are the same parameter in every project:
+Classify writes the OmniClass number and name onto the Arch template parameters:
 
-- `OmniClass Number`
-- `OmniClass Title`
+- `Classification.Space.Number` — e.g. `13-23 17 11`
+- `Classification.Space.Description` — e.g. `Men's Restroom`
+- `COBie.Space.Category` — both together, e.g. `13-23 17 11: Men's Restroom`
 
-Shared, not project, so they can be scheduled and they survive IFC and ODBC export (which
-is what the COBie side of this repo needs). Names are configurable in `OmniClass.Rooms.config`.
+If those parameters already exist they are reused. They are only created when the
+project does not already have them. Names are configurable in `OmniClass.Rooms.config`.
 
 The classify preview pre-selects only exact dictionary hits. Probable and ambiguous matches
 are listed for review. Unplaced rooms, not-enclosed rooms, rooms owned by another user, and

@@ -11,6 +11,7 @@ namespace OmniClass.Core.Configuration
     {
         public static readonly Guid Number = new Guid("a7e4c2b1-5d8f-4a3e-9c12-6b8d0e4f1a73");
         public static readonly Guid Title = new Guid("b8f5d3c2-6e90-4b4f-8d23-7c9e1f5a2b84");
+        public static readonly Guid Category = new Guid("c9a6e4d3-7f01-4c50-9e34-8d0f2a6b3c95");
         public const string GroupName = "OmniClass";
     }
 }

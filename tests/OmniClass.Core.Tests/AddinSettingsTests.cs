@@ -13,8 +13,9 @@ namespace OmniClass.Core.Tests
             var settings = AddinSettings.LoadFrom("", folder);
 
             Assert.Equal(Path.Combine(folder, "data", "room_aliases.csv"), settings.DictionaryPath);
-            Assert.Equal("OmniClass Number", settings.NumberParameterName);
-            Assert.Equal("OmniClass Title", settings.TitleParameterName);
+            Assert.Equal("Classification.Space.Number", settings.NumberParameterName);
+            Assert.Equal("Classification.Space.Description", settings.TitleParameterName);
+            Assert.Equal("COBie.Space.Category", settings.CategoryParameterName);
             Assert.False(settings.OverwriteExisting);
         }
 
@@ -53,6 +54,7 @@ namespace OmniClass.Core.Tests
         {
             Assert.Equal("a7e4c2b1-5d8f-4a3e-9c12-6b8d0e4f1a73", OmniClassParameterIds.Number.ToString());
             Assert.Equal("b8f5d3c2-6e90-4b4f-8d23-7c9e1f5a2b84", OmniClassParameterIds.Title.ToString());
+            Assert.Equal("c9a6e4d3-7f01-4c50-9e34-8d0f2a6b3c95", OmniClassParameterIds.Category.ToString());
         }
     }
 }

@@ -14,8 +14,9 @@ namespace OmniClass.Core.Configuration
         public const string FileName = "OmniClass.Rooms.config";
 
         public string DictionaryPath { get; private set; }
-        public string NumberParameterName { get; private set; } = "OmniClass Number";
-        public string TitleParameterName { get; private set; } = "OmniClass Title";
+        public string NumberParameterName { get; private set; } = "Classification.Space.Number";
+        public string TitleParameterName { get; private set; } = "Classification.Space.Description";
+        public string CategoryParameterName { get; private set; } = "COBie.Space.Category";
         public string SharedParameterFilePath { get; private set; }
         public bool OverwriteExisting { get; private set; }
 
@@ -58,6 +59,10 @@ namespace OmniClass.Core.Configuration
                         break;
                     case "sharedparameterfile":
                         settings.SharedParameterFilePath = Resolve(folder, value);
+                        break;
+                    case "categoryparameter":
+                    case "cobiecategoryparameter":
+                        settings.CategoryParameterName = value;
                         break;
                     case "overwriteexisting":
                         settings.OverwriteExisting = value.Equals("true", StringComparison.OrdinalIgnoreCase);

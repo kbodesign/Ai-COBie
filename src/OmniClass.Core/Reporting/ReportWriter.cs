@@ -11,37 +11,35 @@ using OmniClass.Core.Model;
 namespace OmniClass.Core.Reporting
 {
     /// <summary>
-    /// CSV reports. These are the hand-off between the tool and the people curating the
-    /// dictionary, so they are shaped to be pasted straight back into the authoring sheet.
+    /// CSV reports shaped like the authoring sheet: Number and Name in A and B, then
+    /// each room-name spelling as the next column, so Harvest output can be pasted
+    /// straight back into the dictionary.
     /// </summary>
     public static class ReportWriter
     {
         public static void WriteAudit(TextWriter writer, IEnumerable<RoomNameTally> tallies, RoomClassifier classifier = null)
         {
+            WriteAliasDatabase(writer, tallies, classifier);
+        }
+
+        public static void WriteAliasDatabase(TextWriter writer, IEnumerable<RoomNameTally> tallies, RoomClassifier classifier = null)
+        {
             if (writer == null) throw new ArgumentNullException(nameof(writer));
 
-            writer.WriteLine(DelimitedText.FormatRow(new[]
-            {
-                "Rooms", "Normalized", "Spellings Seen", "Status", "Proposed Number", "Proposed Title", "Matched Alias", "Score"
-            }));
+            var groups = GroupByClassification(tallies, classifier);
+            var extraColumns = groups.Count == 0 ? 1 : groups.Max(g => g.Names.Count);
+            if (extraColumns < 1) extraColumns = 1;
 
-            foreach (var tally in tallies ?? Enumerable.Empty<RoomNameTally>())
-            {
-                var result = classifier?.Classify(tally.MostCommonVariant);
+            var header = new List<string> { "Number", "Name" };
+            for (var i = 1; i <= extraColumns; i++) header.Add("Room Name " + i);
+            writer.WriteLine(DelimitedText.FormatRow(header));
 
-                writer.WriteLine(DelimitedText.FormatRow(new[]
-                {
-                    tally.Count.ToString(CultureInfo.InvariantCulture),
-                    tally.Key,
-                    string.Join(" | ", tally.Variants.Select(v => v.Key + " (" + v.Value + ")")),
-                    result == null ? string.Empty : result.Status.ToString(),
-                    result?.Number ?? string.Empty,
-                    result?.Title ?? string.Empty,
-                    result?.MatchedAlias ?? string.Empty,
-                    result == null || result.Score == 0d
-                        ? string.Empty
-                        : result.Score.ToString("0.00", CultureInfo.InvariantCulture)
-                }));
+            foreach (var group in groups)
+            {
+                var fields = new List<string> { group.Number, group.Name };
+                fields.AddRange(group.Names);
+                while (fields.Count < 2 + extraColumns) fields.Add(string.Empty);
+                writer.WriteLine(DelimitedText.FormatRow(fields));
             }
         }
 
@@ -51,7 +49,7 @@ namespace OmniClass.Core.Reporting
 
             writer.WriteLine(DelimitedText.FormatRow(new[]
             {
-                "Room Name", "Status", "Number", "Title", "Matched Alias", "Score", "Other Candidates"
+                "Room Name", "Status", "Number", "Name", "Matched Alias", "Score", "Other Candidates"
             }));
 
             foreach (var result in results ?? Enumerable.Empty<ClassificationResult>())
@@ -85,6 +83,60 @@ namespace OmniClass.Core.Reporting
                     message.Message
                 }));
             }
+        }
+
+        private sealed class AliasGroup
+        {
+            public string Number { get; set; }
+            public string Name { get; set; }
+            public List<string> Names { get; } = new List<string>();
+        }
+
+        private static List<AliasGroup> GroupByClassification(IEnumerable<RoomNameTally> tallies, RoomClassifier classifier)
+        {
+            var classified = new Dictionary<string, AliasGroup>(StringComparer.Ordinal);
+            var unmatched = new List<AliasGroup>();
+
+            foreach (var tally in tallies ?? Enumerable.Empty<RoomNameTally>())
+            {
+                var result = classifier?.Classify(tally.MostCommonVariant);
+                var number = result == null || result.Status == MatchStatus.Unmatched
+                    ? string.Empty
+                    : result.Number;
+                var name = result == null || result.Status == MatchStatus.Unmatched
+                    ? string.Empty
+                    : result.Title;
+
+                var spellings = tally.Variants.Select(v => v.Key).ToList();
+
+                if (number.Length == 0)
+                {
+                    unmatched.Add(new AliasGroup
+                    {
+                        Number = string.Empty,
+                        Name = string.Empty,
+                        Names = { tally.MostCommonVariant }
+                    });
+                    continue;
+                }
+
+                if (!classified.TryGetValue(number, out var group))
+                {
+                    group = new AliasGroup { Number = number, Name = name };
+                    classified.Add(number, group);
+                }
+
+                foreach (var spelling in spellings)
+                {
+                    if (!group.Names.Any(existing => string.Equals(existing, spelling, StringComparison.OrdinalIgnoreCase)))
+                        group.Names.Add(spelling);
+                }
+            }
+
+            return classified.Values
+                .OrderBy(g => g.Number, StringComparer.Ordinal)
+                .Concat(unmatched)
+                .ToList();
         }
     }
 }

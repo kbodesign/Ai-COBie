@@ -60,10 +60,12 @@ namespace OmniClass.Core.Tests
             var lines = writer.ToString().Split('\n').Where(l => l.Trim().Length > 0).ToList();
 
             Assert.Equal(3, lines.Count);
-            Assert.StartsWith("Rooms,Normalized,", lines[0]);
-            Assert.Contains("Exact", lines[1]);
+            Assert.StartsWith("Number,Name,Room Name 1", lines[0]);
             Assert.Contains("13-23 17", lines[1]);
-            Assert.Contains("Unmatched", lines[2]);
+            Assert.Contains("Restroom", lines[1]);
+            Assert.Contains("Rest_Room", lines[1]);
+            Assert.StartsWith(",,", lines[2]);
+            Assert.Contains("Broom Closet", lines[2]);
         }
 
         [Fact]
