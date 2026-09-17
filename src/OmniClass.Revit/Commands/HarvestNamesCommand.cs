@@ -71,7 +71,7 @@ namespace OmniClass.Revit.Commands
             int already;
             if (File.Exists(dialog.FileName))
             {
-                var existing = AliasSheet.FromFile(dialog.FileName);
+                var existing = AliasSheet.FromFile(dialog.FileName, classifier: classifier);
                 added = existing.MergeUnique(incoming);
                 already = incoming.Rows.Sum(r => r.Aliases.Count) - added;
                 if (already < 0) already = 0;

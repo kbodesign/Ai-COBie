@@ -64,7 +64,7 @@ namespace OmniClass.Core.Tests
             Assert.Contains("13-23 17", lines[1]);
             Assert.Contains("Restroom", lines[1]);
             Assert.Contains("Rest_Room", lines[1]);
-            Assert.StartsWith(",,", lines[2]);
+            Assert.StartsWith("n/a,n/a", lines[2]);
             Assert.Contains("Broom Closet", lines[2]);
         }
 

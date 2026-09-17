@@ -148,7 +148,7 @@ column. Use --column to choose explicitly.";
 
             if (!string.IsNullOrEmpty(options.Out) && File.Exists(options.Out))
             {
-                var existing = AliasSheet.FromFile(options.Out);
+                var existing = AliasSheet.FromFile(options.Out, classifier: classifier);
                 var added = existing.MergeUnique(AliasSheet.FromTallies(tallies, classifier));
                 existing.WriteFile(options.Out);
                 Console.WriteLine();
