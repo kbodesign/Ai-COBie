@@ -22,9 +22,9 @@ namespace OmniClass.Revit
                 assembly,
                 typeof(ClassifyRoomsCommand).FullName)
             {
-                ToolTip = "Match room names to OmniClass Table 13 and fill " +
-                          "Classification.Space.Number, Classification.Space.Description, and " +
-                          "COBie.Space.Category. Exact matches are pre-selected; everything else waits for review.",
+                ToolTip = "Match room names to OmniClass Table 13 and assign the same values as " +
+                          "Interoperability → Assign Classification: Classification.Space.Number, " +
+                          "Classification.Space.Description, COBie.Space.Category, and ClassificationCode.",
                 LongDescription = "Reads the alias dictionary next to this add-in, classifies " +
                                   "every placed room in the model, and shows a preview. Only " +
                                   "checked rows are written. Unplaced rooms, rooms owned by " +

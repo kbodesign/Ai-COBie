@@ -180,14 +180,18 @@ To rebuild the zips after changing code: `dotnet build -c Release` then `.\insta
 
 ## What the add-in writes
 
-Classify writes the OmniClass number and name onto the Arch template parameters:
+Classify writes the same payload as Interoperability → **Assign Classification** for a
+Table 13 space (there is no public API for that button, so the values are written
+directly):
 
 - `Classification.Space.Number` — e.g. `13-23 17 11`
 - `Classification.Space.Description` — e.g. `Men's Restroom`
-- `COBie.Space.Category` — both together, e.g. `13-23 17 11: Men's Restroom`
+- `COBie.Space.Category` — `13-23 17 11: Men's Restroom`
+- `ClassificationCode` — `[OmniClass Table 13]13-23 17 11: Men's Restroom` when that
+  parameter exists (IFC export)
 
-If those parameters already exist they are reused. They are only created when the
-project does not already have them. Names are configurable in `OmniClass.Rooms.config`.
+If those parameters already exist they are reused. They are not created. Names are
+configurable in `OmniClass.Rooms.config`.
 
 The classify preview pre-selects only exact dictionary hits. Probable and ambiguous matches
 are listed for review. Unplaced rooms, not-enclosed rooms, rooms owned by another user, and

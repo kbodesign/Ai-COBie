@@ -18,6 +18,11 @@ namespace OmniClass.Revit.Rooms
         public List<string> Failures { get; } = new List<string>();
     }
 
+    /// <summary>
+    /// Writes the same space-classification payload as Interoperability → Assign
+    /// Classification: Number, Description, COBie category, and ClassificationCode
+    /// when that parameter exists. Parameters are never created here.
+    /// </summary>
     internal static class ClassificationWriter
     {
         public static WriteResult Apply(Document document, IEnumerable<PreviewRow> rows, AddinSettings settings)
@@ -35,22 +40,27 @@ namespace OmniClass.Revit.Rooms
                     continue;
                 }
 
-                var number = room.LookupParameter(settings.NumberParameterName);
-                var title = room.LookupParameter(settings.TitleParameterName);
-                var category = string.IsNullOrEmpty(settings.CategoryParameterName)
-                    ? null
-                    : room.LookupParameter(settings.CategoryParameterName);
+                var assignments = Assignments(settings, row.ProposedNumber, row.ProposedTitle);
+                var found = new List<KeyValuePair<Parameter, string>>();
 
-                if (number == null && title == null && category == null)
+                foreach (var assignment in assignments)
+                {
+                    var parameter = FindParameter(room, assignment.Key);
+                    if (parameter != null) found.Add(new KeyValuePair<Parameter, string>(parameter, assignment.Value));
+                }
+
+                if (found.Count == 0)
                 {
                     result.Skipped++;
                     result.Failures.Add(row.RoomNumber + " " + row.RoomName +
-                                        ": none of " + settings.NumberParameterName + ", " +
-                                        settings.TitleParameterName + " or " +
-                                        settings.CategoryParameterName + " is on this room.");
+                                        ": Assign Classification parameters are not on this room " +
+                                        "(Classification.Space.Number / Description).");
                     continue;
                 }
 
+                var number = FindParameter(room, settings.NumberParameterName);
+                var title = FindParameter(room, settings.TitleParameterName);
+                var category = FindParameter(room, settings.CategoryParameterName);
                 var currentNumber = TextOf(number);
                 var currentTitle = TextOf(title);
                 var currentCategory = TextOf(category);
@@ -63,12 +73,7 @@ namespace OmniClass.Revit.Rooms
                     continue;
                 }
 
-                var nextNumber = row.ProposedNumber;
-                var nextTitle = row.ProposedTitle;
-                var nextCategory = OmniClassFormatting.Category(nextNumber, nextTitle);
-
-                if (Same(currentNumber, nextNumber) && Same(currentTitle, nextTitle)
-                    && (category == null || Same(currentCategory, nextCategory)))
+                if (found.TrueForAll(pair => Same(TextOf(pair.Key), pair.Value)))
                 {
                     result.Unchanged++;
                     continue;
@@ -76,9 +81,7 @@ namespace OmniClass.Revit.Rooms
 
                 try
                 {
-                    TrySet(number, nextNumber);
-                    TrySet(title, nextTitle);
-                    TrySet(category, nextCategory);
+                    foreach (var pair in found) TrySet(pair.Key, pair.Value);
                     result.Written++;
                 }
                 catch (Exception ex)
@@ -89,6 +92,42 @@ namespace OmniClass.Revit.Rooms
             }
 
             return result;
+        }
+
+        private static IReadOnlyList<KeyValuePair<string, string>> Assignments(AddinSettings settings, string number, string title)
+        {
+            var values = AssignClassificationValues.ForSpace(number, title);
+            var mapped = new List<KeyValuePair<string, string>>(values.Count);
+
+            foreach (var pair in values)
+            {
+                var name = pair.Key;
+                if (name == AssignClassificationValues.NumberParameter) name = settings.NumberParameterName;
+                else if (name == AssignClassificationValues.DescriptionParameter) name = settings.TitleParameterName;
+                else if (name == AssignClassificationValues.CobieCategoryParameter) name = settings.CategoryParameterName;
+
+                if (!string.IsNullOrEmpty(name))
+                    mapped.Add(new KeyValuePair<string, string>(name, pair.Value));
+            }
+
+            return mapped;
+        }
+
+        internal static Parameter FindParameter(Element element, string name)
+        {
+            if (element == null || string.IsNullOrEmpty(name)) return null;
+
+            var exact = element.LookupParameter(name);
+            if (exact != null) return exact;
+
+            foreach (Parameter parameter in element.Parameters)
+            {
+                if (parameter?.Definition != null
+                    && string.Equals(parameter.Definition.Name, name, StringComparison.OrdinalIgnoreCase))
+                    return parameter;
+            }
+
+            return null;
         }
 
         private static string TextOf(Parameter parameter)
