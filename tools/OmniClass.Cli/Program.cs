@@ -146,7 +146,19 @@ column. Use --column to choose explicitly.";
                 }
             }
 
-            WriteReport(options.Out, writer => ReportWriter.WriteAudit(writer, tallies, classifier));
+            if (!string.IsNullOrEmpty(options.Out) && File.Exists(options.Out))
+            {
+                var existing = AliasSheet.FromFile(options.Out);
+                var added = existing.MergeUnique(AliasSheet.FromTallies(tallies, classifier));
+                existing.WriteFile(options.Out);
+                Console.WriteLine();
+                Console.WriteLine("Merged " + added + " unique name" + (added == 1 ? "" : "s") + " into " + options.Out + ".");
+            }
+            else
+            {
+                WriteReport(options.Out, writer => ReportWriter.WriteAudit(writer, tallies, classifier));
+            }
+
             return 0;
         }
 

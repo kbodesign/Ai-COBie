@@ -6,8 +6,8 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Microsoft.Win32;
 using OmniClass.Core.Audit;
+using OmniClass.Core.Loading;
 using OmniClass.Core.Matching;
-using OmniClass.Core.Reporting;
 using OmniClass.Revit.Rooms;
 
 namespace OmniClass.Revit.Commands
@@ -55,39 +55,41 @@ namespace OmniClass.Revit.Commands
             var tallies = RoomNameAudit.Tally(names);
             var dictionary = CommandSupport.TryLoadDictionary(settings, warnIfMissing: false, requireClean: false);
             var classifier = dictionary == null ? null : new RoomClassifier(dictionary);
+            var incoming = AliasSheet.FromTallies(tallies, classifier);
 
             var dialog = new SaveFileDialog
             {
-                Title = "Save room name harvest",
+                Title = "Save or merge room names",
                 Filter = "CSV (*.csv)|*.csv",
                 FileName = SuggestedFileName(document),
-                OverwritePrompt = true
+                OverwritePrompt = false
             };
 
             if (dialog.ShowDialog() != true) return Result.Cancelled;
 
-            using (var writer = new StreamWriter(dialog.FileName))
+            int added;
+            int already;
+            if (File.Exists(dialog.FileName))
             {
-                ReportWriter.WriteAudit(writer, tallies, classifier);
+                var existing = AliasSheet.FromFile(dialog.FileName);
+                added = existing.MergeUnique(incoming);
+                already = incoming.Rows.Sum(r => r.Aliases.Count) - added;
+                if (already < 0) already = 0;
+                existing.WriteFile(dialog.FileName);
             }
-
-            var unmatched = classifier == null
-                ? 0
-                : tallies.Count(t => classifier.Classify(t.MostCommonVariant).Status == MatchStatus.Unmatched);
-
-            var top = tallies
-                .Where(t => classifier == null || classifier.Classify(t.MostCommonVariant).Status == MatchStatus.Unmatched)
-                .Take(8)
-                .Select(t => "  " + t.Count + "  " + t.MostCommonVariant);
+            else
+            {
+                incoming.WriteFile(dialog.FileName);
+                added = incoming.Rows.Sum(r => r.Aliases.Count);
+                already = 0;
+            }
 
             CommandSupport.Inform(
                 "Harvest saved",
-                names.Count + " rooms, " + tallies.Count + " distinct names after normalizing.\n" +
-                (classifier == null
-                    ? "No dictionary loaded, so the report has names only."
-                    : unmatched + " distinct names have no classification yet.") +
-                "\n\nSaved to:\n" + dialog.FileName +
-                (top.Any() ? "\n\nMost common names to add next:\n" + string.Join("\n", top) : ""));
+                names.Count + " rooms harvested.\n" +
+                added + " unique name" + (added == 1 ? "" : "s") + " written" +
+                (already == 0 ? "." : "; " + already + " already on the sheet and were not repeated.") +
+                "\n\nSaved to:\n" + dialog.FileName);
 
             return Result.Succeeded;
         }

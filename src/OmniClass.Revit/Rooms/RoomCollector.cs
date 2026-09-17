@@ -60,7 +60,8 @@ namespace OmniClass.Revit.Rooms
                 OwnedByOtherUser = owned,
                 OwnerName = owner,
                 CurrentNumber = ParameterText(room, settings.NumberParameterName),
-                CurrentTitle = ParameterText(room, settings.TitleParameterName)
+                CurrentTitle = ParameterText(room, settings.TitleParameterName),
+                CurrentCategory = ParameterText(room, settings.CategoryParameterName)
             };
         }
 

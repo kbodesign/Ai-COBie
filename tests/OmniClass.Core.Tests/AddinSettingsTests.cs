@@ -17,6 +17,7 @@ namespace OmniClass.Core.Tests
             Assert.Equal("Classification.Space.Description", settings.TitleParameterName);
             Assert.Equal("COBie.Space.Category", settings.CategoryParameterName);
             Assert.False(settings.OverwriteExisting);
+            Assert.False(settings.CreateMissingParameters);
         }
 
         [Fact]

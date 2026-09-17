@@ -75,8 +75,15 @@ namespace OmniClass.Revit.Commands
                 using (var bind = new Transaction(document, "Bind OmniClass parameters"))
                 {
                     bind.Start();
-                    SharedParameterBinder.EnsureBound(document, settings);
-                    bind.Commit();
+                    try
+                    {
+                        SharedParameterBinder.EnsureBound(document, settings);
+                        bind.Commit();
+                    }
+                    catch
+                    {
+                        bind.RollBack();
+                    }
                 }
 
                 WriteResult written;
@@ -92,8 +99,12 @@ namespace OmniClass.Revit.Commands
                 var failures = CommandSupport.FormatFailures(written.Failures);
                 CommandSupport.Inform(
                     "Classification applied",
-                    "Wrote " + written.Written + " room" + (written.Written == 1 ? "" : "s") +
-                    (written.Skipped == 0 ? "." : ". Skipped " + written.Skipped + ".") +
+                    "Wrote " + written.Written + " room" + (written.Written == 1 ? "" : "s") + ". " +
+                    (written.AlreadyPopulated == 0
+                        ? ""
+                        : written.AlreadyPopulated + " already had a value and were left alone. ") +
+                    (written.Unchanged == 0 ? "" : written.Unchanged + " already matched. ") +
+                    (written.Skipped == 0 ? "" : "Skipped " + written.Skipped + ". ") +
                     (failures.Length == 0 ? "" : "\n\n" + failures));
             }
 

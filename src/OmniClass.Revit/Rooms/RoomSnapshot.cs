@@ -17,10 +17,12 @@ namespace OmniClass.Revit.Rooms
         public string OwnerName { get; set; } = string.Empty;
         public string CurrentNumber { get; set; } = string.Empty;
         public string CurrentTitle { get; set; } = string.Empty;
+        public string CurrentCategory { get; set; } = string.Empty;
 
         public bool IsWritable => !IsUnplaced && !IsNotEnclosed && !OwnedByOtherUser;
 
         public bool AlreadyClassified =>
-            OmniClass.Core.Matching.ApplyPolicy.HasExistingClassification(CurrentNumber, CurrentTitle);
+            OmniClass.Core.Matching.ApplyPolicy.HasExistingClassification(CurrentNumber, CurrentTitle)
+            || !string.IsNullOrWhiteSpace(CurrentCategory);
     }
 }

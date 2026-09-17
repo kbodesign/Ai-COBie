@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using OmniClass.Core.Audit;
 using OmniClass.Core.Io;
+using OmniClass.Core.Loading;
 using OmniClass.Core.Matching;
 using OmniClass.Core.Model;
 
@@ -24,23 +25,7 @@ namespace OmniClass.Core.Reporting
 
         public static void WriteAliasDatabase(TextWriter writer, IEnumerable<RoomNameTally> tallies, RoomClassifier classifier = null)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
-
-            var groups = GroupByClassification(tallies, classifier);
-            var extraColumns = groups.Count == 0 ? 1 : groups.Max(g => g.Names.Count);
-            if (extraColumns < 1) extraColumns = 1;
-
-            var header = new List<string> { "Number", "Name" };
-            for (var i = 1; i <= extraColumns; i++) header.Add("Room Name " + i);
-            writer.WriteLine(DelimitedText.FormatRow(header));
-
-            foreach (var group in groups)
-            {
-                var fields = new List<string> { group.Number, group.Name };
-                fields.AddRange(group.Names);
-                while (fields.Count < 2 + extraColumns) fields.Add(string.Empty);
-                writer.WriteLine(DelimitedText.FormatRow(fields));
-            }
+            AliasSheet.FromTallies(tallies, classifier).Write(writer);
         }
 
         public static void WriteResults(TextWriter writer, IEnumerable<ClassificationResult> results)
@@ -85,58 +70,5 @@ namespace OmniClass.Core.Reporting
             }
         }
 
-        private sealed class AliasGroup
-        {
-            public string Number { get; set; }
-            public string Name { get; set; }
-            public List<string> Names { get; } = new List<string>();
-        }
-
-        private static List<AliasGroup> GroupByClassification(IEnumerable<RoomNameTally> tallies, RoomClassifier classifier)
-        {
-            var classified = new Dictionary<string, AliasGroup>(StringComparer.Ordinal);
-            var unmatched = new List<AliasGroup>();
-
-            foreach (var tally in tallies ?? Enumerable.Empty<RoomNameTally>())
-            {
-                var result = classifier?.Classify(tally.MostCommonVariant);
-                var number = result == null || result.Status == MatchStatus.Unmatched
-                    ? string.Empty
-                    : result.Number;
-                var name = result == null || result.Status == MatchStatus.Unmatched
-                    ? string.Empty
-                    : result.Title;
-
-                var spellings = tally.Variants.Select(v => v.Key).ToList();
-
-                if (number.Length == 0)
-                {
-                    unmatched.Add(new AliasGroup
-                    {
-                        Number = string.Empty,
-                        Name = string.Empty,
-                        Names = { tally.MostCommonVariant }
-                    });
-                    continue;
-                }
-
-                if (!classified.TryGetValue(number, out var group))
-                {
-                    group = new AliasGroup { Number = number, Name = name };
-                    classified.Add(number, group);
-                }
-
-                foreach (var spelling in spellings)
-                {
-                    if (!group.Names.Any(existing => string.Equals(existing, spelling, StringComparison.OrdinalIgnoreCase)))
-                        group.Names.Add(spelling);
-                }
-            }
-
-            return classified.Values
-                .OrderBy(g => g.Number, StringComparer.Ordinal)
-                .Concat(unmatched)
-                .ToList();
-        }
     }
 }

@@ -191,8 +191,10 @@ project does not already have them. Names are configurable in `OmniClass.Rooms.c
 
 The classify preview pre-selects only exact dictionary hits. Probable and ambiguous matches
 are listed for review. Unplaced rooms, not-enclosed rooms, rooms owned by another user, and
-rooms that already have a value are left alone unless `overwriteExisting = true`. The whole
-write is one undo.
+rooms that already have a value are left alone unless `overwriteExisting = true`. A second
+run does not overwrite populated values and does not try to recreate shared parameters
+(that is what caused the GUID error). Harvest appends only unique names when the CSV
+already exists. The whole write is one undo.
 
 Dictionary version stamping is not in yet: a later pass should record which dictionary
 classified the model so a correction can find the rooms it touched.

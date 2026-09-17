@@ -20,6 +20,12 @@ namespace OmniClass.Core.Configuration
         public string SharedParameterFilePath { get; private set; }
         public bool OverwriteExisting { get; private set; }
 
+        /// <summary>
+        /// Off by default. The Arch template already has Classification.Space.* and
+        /// COBie.Space.Category; creating them again is what produced the GUID clash.
+        /// </summary>
+        public bool CreateMissingParameters { get; private set; }
+
         public static AddinSettings Load(string assemblyFolder)
         {
             if (string.IsNullOrEmpty(assemblyFolder))
@@ -66,6 +72,9 @@ namespace OmniClass.Core.Configuration
                         break;
                     case "overwriteexisting":
                         settings.OverwriteExisting = value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                        break;
+                    case "createmissingparameters":
+                        settings.CreateMissingParameters = value.Equals("true", StringComparison.OrdinalIgnoreCase);
                         break;
                 }
             }

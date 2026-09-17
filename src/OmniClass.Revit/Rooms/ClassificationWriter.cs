@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using OmniClass.Core.Configuration;
+using OmniClass.Core.Matching;
 using OmniClass.Core.Model;
 using OmniClass.Revit.Ui;
 
@@ -11,6 +12,8 @@ namespace OmniClass.Revit.Rooms
     internal sealed class WriteResult
     {
         public int Written { get; set; }
+        public int AlreadyPopulated { get; set; }
+        public int Unchanged { get; set; }
         public int Skipped { get; set; }
         public List<string> Failures { get; } = new List<string>();
     }
@@ -38,28 +41,44 @@ namespace OmniClass.Revit.Rooms
                     ? null
                     : room.LookupParameter(settings.CategoryParameterName);
 
-                if (number == null || title == null)
+                if (number == null && title == null && category == null)
                 {
                     result.Skipped++;
                     result.Failures.Add(row.RoomNumber + " " + row.RoomName +
-                                        ": " + settings.NumberParameterName + " or " +
-                                        settings.TitleParameterName + " is not on this room.");
+                                        ": none of " + settings.NumberParameterName + ", " +
+                                        settings.TitleParameterName + " or " +
+                                        settings.CategoryParameterName + " is on this room.");
                     continue;
                 }
 
-                if (number.IsReadOnly || title.IsReadOnly || (category != null && category.IsReadOnly))
+                var currentNumber = TextOf(number);
+                var currentTitle = TextOf(title);
+                var currentCategory = TextOf(category);
+                var already = ApplyPolicy.HasExistingClassification(currentNumber, currentTitle)
+                              || !string.IsNullOrWhiteSpace(currentCategory);
+
+                if (already && !settings.OverwriteExisting)
                 {
-                    result.Skipped++;
-                    result.Failures.Add(row.RoomNumber + " " + row.RoomName + ": parameter is read-only.");
+                    result.AlreadyPopulated++;
+                    continue;
+                }
+
+                var nextNumber = row.ProposedNumber;
+                var nextTitle = row.ProposedTitle;
+                var nextCategory = OmniClassFormatting.Category(nextNumber, nextTitle);
+
+                if (Same(currentNumber, nextNumber) && Same(currentTitle, nextTitle)
+                    && (category == null || Same(currentCategory, nextCategory)))
+                {
+                    result.Unchanged++;
                     continue;
                 }
 
                 try
                 {
-                    number.Set(row.ProposedNumber);
-                    title.Set(row.ProposedTitle);
-                    if (category != null)
-                        category.Set(OmniClassFormatting.Category(row.ProposedNumber, row.ProposedTitle));
+                    TrySet(number, nextNumber);
+                    TrySet(title, nextTitle);
+                    TrySet(category, nextCategory);
                     result.Written++;
                 }
                 catch (Exception ex)
@@ -70,6 +89,24 @@ namespace OmniClass.Revit.Rooms
             }
 
             return result;
+        }
+
+        private static string TextOf(Parameter parameter)
+        {
+            if (parameter == null) return string.Empty;
+            return parameter.AsString() ?? string.Empty;
+        }
+
+        private static bool Same(string left, string right)
+        {
+            return string.Equals((left ?? string.Empty).Trim(), (right ?? string.Empty).Trim(), StringComparison.Ordinal);
+        }
+
+        private static void TrySet(Parameter parameter, string value)
+        {
+            if (parameter == null || parameter.IsReadOnly) return;
+            if (Same(parameter.AsString(), value)) return;
+            parameter.Set(value ?? string.Empty);
         }
     }
 }
