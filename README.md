@@ -121,27 +121,29 @@ Use `--column` to choose explicitly.
 
 ## The dictionary file
 
-`data/room_aliases.csv` — Number and Name in columns A and B, then each room-name
-option in C, D, E, … so the sheet grows like a small database:
+`data/room_aliases.csv` is OmniClass **Table 13 (Spaces by Function, May 2012)**: Number and
+Name in columns A and B, then extra room-name spellings in C, D, E, … The official title in
+B is already an exact match, so it is not copied into C.
 
 ```csv
 Number,Name,Room Name 1,Room Name 2,Room Name 3,Room Name 4,Room Name 5,Room Name 6
 13-23 17,Restroom,RR,R Room,RestRoom,Rest_Room,Toilet,WC
-13-23 17 11,Men's Restroom,MR,M Room,Men's Restroom,Men's-Restroom,Mens Toilet,Gents
+13-23 17 11,Men's Restroom,MR,M Room,Men's-Restroom,Mens Toilet,Gents
+13-23 19 27,Electrical Room
 ```
 
-Harvest Names writes this same layout, so you can paste new spellings into the next
-empty column. An older sheet that still has a level digit in column C is still accepted.
-
-The title is always an alias whether or not it is repeated in an alias column.
+A room named `Electrical Room` or `Women's Restroom` matches from column B with no extra
+alias. C+ is only for names people actually type (`WRR`, `W Room`, `Ladies`). Harvest Names
+writes this same layout, so you can paste new spellings into the next empty column. An older
+sheet that still has a level digit in column C is still accepted.
 
 Two things to watch:
 
 - **Format the number column as Text.** Excel will otherwise turn `13-23 17` into a date.
   The loader detects that and says so rather than failing quietly.
-- **The bundled data is a seed, not the official table.** The four restroom rows come from
-  the original screenshot; the extra synonyms are suggestions. Verify numbers and titles
-  against the official OmniClass Table 13 release before using this on deliverables.
+- A few official titles appear on two Table 13 numbers (`Evidence Room`, `Box Lobby`), and
+  Clean Room Class 1–9 collapse to the same key after trailing numbers are stripped. Those
+  are not auto-applied; they come back for review.
 
 `validate` grades problems as errors (row dropped), warnings (loads, but suspicious) or info
 (redundant cells you can delete), each with a spreadsheet cell reference.

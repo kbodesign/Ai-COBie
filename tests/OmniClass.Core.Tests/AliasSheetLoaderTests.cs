@@ -78,6 +78,20 @@ namespace OmniClass.Core.Tests
         }
 
         [Fact]
+        public void DuplicateOfficialTitlesAreAWarningNotAnExactMatch()
+        {
+            var dictionary = Fixture.Load(
+                "Number,Name\n" +
+                "13-25 13 15,Box Lobby\n" +
+                "13-55 29 19,Box Lobby\n");
+
+            Assert.False(dictionary.HasErrors);
+            Assert.Contains(dictionary.Messages, m => m.Code == "AmbiguousOfficialTitle");
+            Assert.Equal(2, dictionary.Entries.Count);
+            Assert.Null(dictionary.FindExact("BOXLOBBY"));
+        }
+
+        [Fact]
         public void AliasThatNormalizesToNothingIsReported()
         {
             var dictionary = Fixture.Load(
@@ -205,7 +219,24 @@ namespace OmniClass.Core.Tests
                 .ToList();
 
             Assert.Empty(errors);
-            Assert.NotEmpty(dictionary.Entries);
+            Assert.Equal(959, dictionary.Entries.Count);
+            Assert.Equal("Electrical Room", dictionary.FindByNumber("13-23 19 27").Title);
+            Assert.Equal("13-23 19 27", dictionary.FindExact("ELECTRICALROOM").Entry.Number.Canonical);
+            Assert.Equal("Women's Restroom", dictionary.FindExact("WROOM").Entry.Title);
+        }
+
+        [Fact]
+        public void DuplicateOfficialTitlesAreNotAutoApplied()
+        {
+            var dictionary = AliasSheetLoader.LoadFile(Fixture.ShippedDictionaryPath);
+
+            Assert.Contains(dictionary.Messages, m => m.Code == "AmbiguousOfficialTitle");
+            Assert.Null(dictionary.FindExact("EVIDENCEROOM"));
+            Assert.Null(dictionary.FindExact("BOXLOBBY"));
+
+            var result = new OmniClass.Core.Matching.RoomClassifier(dictionary).Classify("Evidence Room");
+            Assert.Equal(OmniClass.Core.Matching.MatchStatus.Ambiguous, result.Status);
+            Assert.False(result.CanAutoApply);
         }
     }
 }

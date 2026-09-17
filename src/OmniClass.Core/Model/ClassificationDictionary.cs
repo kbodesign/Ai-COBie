@@ -71,10 +71,23 @@ namespace OmniClass.Core.Model
             _aliases = (aliases ?? Enumerable.Empty<RoomAlias>()).ToList();
 
             _byKey = new Dictionary<string, RoomAlias>(StringComparer.Ordinal);
+            var numbersByKey = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
             foreach (var alias in _aliases)
             {
-                // Conflicts are reported by the loader's validator; first writer wins here
-                // so a bad row cannot take the whole dictionary down.
+                if (!numbersByKey.TryGetValue(alias.Key, out var numbers))
+                {
+                    numbers = new HashSet<string>(StringComparer.Ordinal);
+                    numbersByKey.Add(alias.Key, numbers);
+                }
+
+                numbers.Add(alias.Entry.Number.Canonical);
+            }
+
+            foreach (var alias in _aliases)
+            {
+                // An official title that appears on two Table 13 rows cannot be an exact
+                // match: auto-applying the first one would be guessing.
+                if (numbersByKey[alias.Key].Count > 1) continue;
                 if (!_byKey.ContainsKey(alias.Key)) _byKey.Add(alias.Key, alias);
             }
 

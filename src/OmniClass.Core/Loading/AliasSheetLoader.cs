@@ -195,16 +195,31 @@ namespace OmniClass.Core.Loading
                             $"({existing.SourceColumn}{existing.SourceRow}); both normalize to '{key}'. " +
                             "This cell can be deleted.",
                             rowNumber, columnName));
+                        continue;
                     }
-                    else
+
+                    var bothOfficialTitles =
+                        existing.SourceColumn == ColumnName(TitleColumn)
+                        && columnName == ColumnName(TitleColumn);
+
+                    if (bothOfficialTitles)
                     {
                         messages.Add(new ValidationMessage(
-                            ValidationSeverity.Error, "ConflictingAlias",
-                            $"'{raw}' normalizes to '{key}', which row {existing.SourceRow} already maps to " +
-                            $"{existing.Entry.Number}. One name cannot mean two classifications - " +
-                            "remove it from one row or make it more specific.",
+                            ValidationSeverity.Warning, "AmbiguousOfficialTitle",
+                            $"'{raw}' is the official title of both {existing.Entry.Number} and {entry.Number}. " +
+                            "Exact match is disabled so a room with this name is reviewed instead of auto-classified.",
                             rowNumber, columnName));
+                        aliasesByKey.Remove(key);
+                        aliases.Add(new RoomAlias(raw, key, entry, rowNumber, columnName, options));
+                        continue;
                     }
+
+                    messages.Add(new ValidationMessage(
+                        ValidationSeverity.Error, "ConflictingAlias",
+                        $"'{raw}' normalizes to '{key}', which row {existing.SourceRow} already maps to " +
+                        $"{existing.Entry.Number}. One name cannot mean two classifications - " +
+                        "remove it from one row or make it more specific.",
+                        rowNumber, columnName));
                     continue;
                 }
 
