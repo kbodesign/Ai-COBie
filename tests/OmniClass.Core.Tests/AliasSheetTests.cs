@@ -94,7 +94,7 @@ namespace OmniClass.Core.Tests
         }
 
         [Fact]
-        public void NamesWithNoTable13MatchAreWrittenAsNotApplicable()
+        public void NamesWithNoTable13MatchKeepBlankNumberAndNameForManualFillIn()
         {
             var sheet = AliasSheet.FromTallies(
                 RoomNameAudit.Tally(new[] { "W Room", "Automatic Door Controls and Operators" }),
@@ -104,13 +104,14 @@ namespace OmniClass.Core.Tests
             Assert.Equal(new[] { "W Room" }, womens.Aliases);
 
             var unmatched = Assert.Single(sheet.Rows, r => r.IsUnmatched);
-            Assert.Equal(AliasSheetRow.UnmatchedLabel, unmatched.Number);
-            Assert.Equal(AliasSheetRow.UnmatchedLabel, unmatched.Name);
+            Assert.Equal(string.Empty, unmatched.Number);
+            Assert.Equal(string.Empty, unmatched.Name);
             Assert.Equal(new[] { "Automatic Door Controls and Operators" }, unmatched.Aliases);
 
             var writer = new StringWriter();
             sheet.Write(writer);
-            Assert.Contains("n/a,n/a,Automatic Door Controls and Operators", writer.ToString());
+            Assert.Contains(",,Automatic Door Controls and Operators", writer.ToString());
+            Assert.DoesNotContain("n/a", writer.ToString());
         }
 
         [Fact]
@@ -134,8 +135,8 @@ namespace OmniClass.Core.Tests
 
             Assert.All(sheet.Rows.Where(r => r.IsUnmatched), r =>
             {
-                Assert.Equal("n/a", r.Number);
-                Assert.Equal("n/a", r.Name);
+                Assert.Equal(string.Empty, r.Number);
+                Assert.Equal(string.Empty, r.Name);
             });
             Assert.Contains(sheet.Rows, r => r.IsUnmatched && r.Aliases.Contains("Automatic Door Controls and Operators"));
             Assert.DoesNotContain(sheet.Rows.Where(r => r.IsUnmatched), r => r.Aliases.Contains("W Room"));
@@ -164,6 +165,22 @@ namespace OmniClass.Core.Tests
             Assert.Equal("WRR", womens.Aliases[0]);
             Assert.Contains("W Room", womens.Aliases);
             Assert.DoesNotContain(existing.Rows.Where(r => r.IsUnmatched), r => r.Aliases.Contains("W Room"));
+        }
+
+        [Fact]
+        public void LegacyNaCellsStillLoadAsUnmatchedBlankRows()
+        {
+            var sheet = AliasSheet.FromRows(new[]
+            {
+                new[] { "Number", "Name", "Room Name 1" },
+                new[] { "n/a", "n/a", "Corridor" }
+            });
+
+            var unmatched = Assert.Single(sheet.Rows);
+            Assert.True(unmatched.IsUnmatched);
+            Assert.Equal(string.Empty, unmatched.Number);
+            Assert.Equal(string.Empty, unmatched.Name);
+            Assert.Equal(new[] { "Corridor" }, unmatched.Aliases);
         }
 
         [Fact]

@@ -18,14 +18,15 @@ namespace OmniClass.Core.Loading
     /// </summary>
     public sealed class AliasSheetRow
     {
+        /// <summary>Legacy harvest files used this in A/B; blank cells mean the same thing.</summary>
         public const string UnmatchedLabel = "n/a";
 
         public AliasSheetRow(string number, string name)
         {
             if (IsUnmatchedNumber(number))
             {
-                Number = UnmatchedLabel;
-                Name = UnmatchedLabel;
+                Number = string.Empty;
+                Name = string.Empty;
             }
             else
             {
@@ -75,7 +76,8 @@ namespace OmniClass.Core.Loading
     /// <summary>
     /// The harvest/dictionary sheet. Merge only appends names whose normalized form is
     /// not already on the sheet, so running Harvest twice does not duplicate options.
-    /// Table 13 rows own their aliases; names with no Table 13 match are written as n/a.
+    /// Table 13 rows own their aliases. Names with no Table 13 match stay on the sheet
+    /// with Number and Name left blank so someone can fill in the classification by hand.
     /// </summary>
     public sealed class AliasSheet
     {
@@ -168,7 +170,7 @@ namespace OmniClass.Core.Loading
 
         /// <summary>
         /// Appends incoming names that are not already on this sheet. Table 13 rows take
-        /// ownership of a name even if it previously sat on an n/a row. Returns how many
+        /// ownership of a name even if it previously sat on a blank unmatched row. Returns how many
         /// new cells were added.
         /// </summary>
         public int MergeUnique(AliasSheet incoming)
@@ -286,7 +288,7 @@ namespace OmniClass.Core.Loading
             if (key.Length == 0) return false;
             if (_usedKeys.Contains(key)) return false;
 
-            var unmatched = new AliasSheetRow(AliasSheetRow.UnmatchedLabel, AliasSheetRow.UnmatchedLabel);
+            var unmatched = new AliasSheetRow(string.Empty, string.Empty);
             if (!unmatched.TryAddUnique(cleaned, _usedKeys, Options)) return false;
 
             _rows.Add(unmatched);
