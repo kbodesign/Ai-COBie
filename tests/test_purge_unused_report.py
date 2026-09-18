@@ -380,6 +380,57 @@ class PurgeExecutionTests(unittest.TestCase):
         self.assertEqual("Failed", log_rows[1][6])
 
 
+class WorkbookRobustnessTests(unittest.TestCase):
+    def setUp(self):
+        self.folder = tempfile.mkdtemp(prefix="purge-robust-")
+
+    def test_unicode_and_control_characters_survive_the_round_trip(self):
+        names = ["Béton coulé sur place", "钢结构 - 型号 A", "Tab\tand\nnewline", "Emoji ok \u2713"]
+        elements = [make_element("Material", 500 + index, name) for index, name in enumerate(names)]
+        document = FakeDocument(elements=elements, unused=[500 + index for index in range(len(names))])
+        run_script(document, [self.folder, "Unicode", False, "", False, 5])
+        rows = load_workbook_rows(os.path.join(self.folder, "Unicode.xlsx"), "Unused Elements")
+        written = {row[4] for row in rows[1:]}
+
+        self.assertIn("Béton coulé sur place", written)
+        self.assertIn("钢结构 - 型号 A", written)
+        self.assertIn("Emoji ok \u2713", written)
+        # Tabs and newlines are legal in XLSX text; the control characters XLSX
+        # forbids are the ones that must be stripped.
+        self.assertIn("Tab\tand\nnewline", written)
+
+    def test_illegal_xml_characters_are_stripped(self):
+        element = make_element("Material", 600, "Bell\x07 and null\x00 inside")
+        document = FakeDocument(elements=[element], unused=[600])
+        run_script(document, [self.folder, "Control", False, "", False, 5])
+        rows = load_workbook_rows(os.path.join(self.folder, "Control.xlsx"), "Unused Elements")
+
+        self.assertEqual("Bell and null inside", rows[1][4])
+
+    def test_three_thousand_rows_stay_readable(self):
+        elements = [make_element("FamilySymbol", 1000 + index, "Type %04d" % index, category="Doors",
+                                 family="Family %02d" % (index % 25)) for index in range(3000)]
+        document = FakeDocument(elements=elements, unused=[1000 + index for index in range(3000)])
+        run_script(document, [self.folder, "Big", False, "", False, 5])
+        path = os.path.join(self.folder, "Big.xlsx")
+        rows = load_workbook_rows(path, "Unused Elements")
+
+        self.assertEqual(3001, len(rows))
+        self.assertEqual(list(range(1, 3001)), [row[0] for row in rows[1:]])
+        self.assertLess(os.path.getsize(path), 2 * 1024 * 1024)
+
+    def test_worksharing_lookup_is_skipped_on_very_large_reports(self):
+        # The per-element worksharing query is too slow to run on every row.
+        elements = [make_element("Material", 2000 + index, "M%d" % index) for index in range(2600)]
+        document = FakeDocument(
+            elements=elements, unused=[2000 + index for index in range(2600)], workshared=True
+        )
+        run_script(document, [self.folder, "Wide", False, "", False, 5])
+        rows = load_workbook_rows(os.path.join(self.folder, "Wide.xlsx"), "Unused Elements")
+
+        self.assertEqual({None}, {row[9] for row in rows[1:]})
+
+
 class OutputPathTests(unittest.TestCase):
     def test_unwritable_folder_falls_back_to_temp(self):
         document = sample_document()

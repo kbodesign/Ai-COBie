@@ -114,7 +114,9 @@ so that one element Revit refuses to delete cannot abandon the rest of the pass.
 ## Safety notes
 
 - Nothing is deleted unless all gates are satisfied: the toggle, the typed keyword, and the
-  in-Revit dialog (when enabled).
+  in-Revit dialog (when enabled). If no dialog can be shown in the session at all, the run
+  proceeds on the strength of the toggle and keyword and records that fact in the log, so an
+  automated run is never blocked by a dialog that cannot be drawn.
 - The report is always written before the purge, so there is a record of the pre-purge state
   even if the purge is interrupted.
 - The purge is a normal Revit transaction, so `Ctrl+Z` still undoes it in the session - but once
