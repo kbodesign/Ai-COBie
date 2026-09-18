@@ -13,6 +13,7 @@ namespace OmniClass.Core.Tests
             Assert.Equal("Classify\nRooms", RibbonPlacement.ClassifyButton);
             Assert.Equal("Export\nRooms", RibbonPlacement.ExportButton);
             Assert.Equal("Import\nRooms", RibbonPlacement.ImportButton);
+            Assert.Equal("Key\nSchedule", RibbonPlacement.KeyScheduleButton);
         }
     }
 }

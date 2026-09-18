@@ -25,6 +25,8 @@ namespace OmniClass.Core.Configuration
         /// COBie.Space.Category; creating them again is what produced the GUID clash.
         /// </summary>
         public bool CreateMissingParameters { get; private set; }
+        public string KeyScheduleName { get; private set; } = "Room Type";
+        public string KeyScheduleParameterName { get; private set; } = "Room Type";
 
         public static AddinSettings Load(string assemblyFolder)
         {
@@ -75,6 +77,12 @@ namespace OmniClass.Core.Configuration
                         break;
                     case "createmissingparameters":
                         settings.CreateMissingParameters = value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                        break;
+                    case "keyschedulename":
+                        settings.KeyScheduleName = value;
+                        break;
+                    case "keyscheduleparameter":
+                        settings.KeyScheduleParameterName = value;
                         break;
                 }
             }

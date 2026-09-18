@@ -7,7 +7,7 @@ from a list of thousands.
 
 **Current state:** the matching engine and a Revit add-in are both in the repo. The add-in
 lands on the **Arch Tools** ribbon, in a panel named **Room Data**, with Classify Rooms,
-Export Rooms, and Import Rooms. See [Install the add-in](#install-the-add-in).
+Export Rooms, Import Rooms, and Key Schedule. See [Install the add-in](#install-the-add-in).
 
 ## Why the spreadsheet layout changed
 
@@ -84,9 +84,11 @@ The dictionary is the product, and it is grown from evidence rather than imagina
 1. **Export Rooms** from finished models into the same `master rooms.csv`. Only unique
    names are appended, so several projects become one master list.
 2. **Curate** names in Excel so every project uses the same room names.
-3. **Import Rooms** to reuse those names. If Classification.Space / COBie parameters are on
-   the rooms, OmniClass Number and Name are written too.
-4. **Classify** remaining rooms that still need a dictionary match.
+3. **Key Schedule** — open the Arch template, import that CSV, save the template. New
+   projects then have a Room Type dropdown of those names.
+4. **Import Rooms** on existing models to reuse those names. If Classification.Space /
+   COBie parameters are on the rooms, OmniClass Number and Name are written too.
+5. **Classify** remaining rooms that still need a dictionary match.
 
 ## Try it without Revit
 
@@ -208,12 +210,18 @@ match a CSV row cannot rename the room. Every room with that name is listed. Che
 can unify spelling, and OmniClass is written into Classification.Space.* /
 COBie.Space.Category when those parameters are on the room. The whole write is one undo.
 
+**Key Schedule** loads the same CSV into a Rooms key schedule named Room Type (configurable).
+If the open document has no Rooms key schedule, one is created. If the Arch template already
+has one (Room Style, Room Type, …), that schedule is reused — a second dropdown is not
+added. Each unique name becomes a key; picking it on a room sets Name and OmniClass when
+those parameters exist. Run it once in the template and save, so new projects already have
+the dropdown. Existing keys not in the CSV are left alone.
+
 Dictionary version stamping is not in yet: a later pass should record which dictionary
 classified the model so a correction can find the rooms it touched.
 
 ## Upstream fix
 
-The same dictionary can feed a **Room key schedule** in the project template, making
+The Key Schedule button feeds a **Room key schedule** in the project template, making
 classification a dropdown at room-creation time. New projects then never need matching at
-all, and this tool handles legacy models, consultant models and cleanup — a much smaller
-problem than every room on every job.
+all, and Classify / Import Rooms handle legacy models, consultant models and cleanup.

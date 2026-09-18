@@ -41,6 +41,8 @@
     <EmbeddedResource Include="Resources\export32.png" />
     <EmbeddedResource Include="Resources\import16.png" />
     <EmbeddedResource Include="Resources\import32.png" />
+    <EmbeddedResource Include="Resources\key16.png" />
+    <EmbeddedResource Include="Resources\key32.png" />
   </ItemGroup>
 
   <Target Name="RemoveRevitApiFromOutput" AfterTargets="Build">

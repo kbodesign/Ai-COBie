@@ -73,37 +73,36 @@ namespace OmniClass.Revit.Rooms
                    || FindParameter(room, settings.CategoryParameterName) != null;
         }
 
-        public static bool TrySetRoomName(Room room, string name)
+        public static bool TrySetRoomName(Element element, string name)
         {
-            if (room == null || string.IsNullOrWhiteSpace(name)) return false;
-
-            var parameter = room.get_Parameter(BuiltInParameter.ROOM_NAME);
-            if (parameter == null || parameter.IsReadOnly) return false;
-            if (Same(TextOf(parameter), name)) return false;
-            parameter.Set(name.Trim());
-            return true;
+            return TrySetBuiltIn(element, BuiltInParameter.ROOM_NAME, name);
         }
 
-        public static bool TryWriteClassification(Room room, AddinSettings settings, string number, string title)
+        public static bool TrySetKeyName(Element element, string name)
         {
-            if (room == null || settings == null) return false;
+            return TrySetBuiltIn(element, BuiltInParameter.REF_TABLE_ELEM_NAME, name);
+        }
+
+        public static bool TryWriteClassification(Element element, AddinSettings settings, string number, string title)
+        {
+            if (element == null || settings == null) return false;
 
             var assignments = Assignments(settings, number, title);
             var found = new List<KeyValuePair<Parameter, string>>();
             foreach (var assignment in assignments)
             {
-                var parameter = FindParameter(room, assignment.Key);
+                var parameter = FindParameter(element, assignment.Key);
                 if (parameter != null) found.Add(new KeyValuePair<Parameter, string>(parameter, assignment.Value));
             }
 
             if (found.Count == 0) return false;
 
             var dummy = new WriteResult();
-            return TryWriteAssignments(room, found, settings, overwrite: true, dummy, room.Number, "");
+            return TryWriteAssignments(element, found, settings, overwrite: true, dummy, "", "");
         }
 
         private static bool TryWriteAssignments(
-            Room room,
+            Element element,
             List<KeyValuePair<Parameter, string>> found,
             AddinSettings settings,
             bool overwrite,
@@ -111,9 +110,9 @@ namespace OmniClass.Revit.Rooms
             string roomNumber,
             string roomName)
         {
-            var number = FindParameter(room, settings.NumberParameterName);
-            var title = FindParameter(room, settings.TitleParameterName);
-            var category = FindParameter(room, settings.CategoryParameterName);
+            var number = FindParameter(element, settings.NumberParameterName);
+            var title = FindParameter(element, settings.TitleParameterName);
+            var category = FindParameter(element, settings.CategoryParameterName);
             var already = ApplyPolicy.HasExistingClassification(TextOf(number), TextOf(title))
                           || !string.IsNullOrWhiteSpace(TextOf(category));
 
@@ -141,6 +140,17 @@ namespace OmniClass.Revit.Rooms
                 result.Failures.Add((roomNumber ?? string.Empty) + " " + (roomName ?? string.Empty) + ": " + ex.Message);
                 return false;
             }
+        }
+
+        private static bool TrySetBuiltIn(Element element, BuiltInParameter bip, string name)
+        {
+            if (element == null || string.IsNullOrWhiteSpace(name)) return false;
+
+            var parameter = element.get_Parameter(bip);
+            if (parameter == null || parameter.IsReadOnly) return false;
+            if (Same(TextOf(parameter), name)) return false;
+            parameter.Set(name.Trim());
+            return true;
         }
 
         private static IReadOnlyList<KeyValuePair<string, string>> Assignments(AddinSettings settings, string number, string title)

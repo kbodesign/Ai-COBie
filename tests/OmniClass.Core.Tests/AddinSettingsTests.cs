@@ -18,6 +18,8 @@ namespace OmniClass.Core.Tests
             Assert.Equal("COBie.Space.Category", settings.CategoryParameterName);
             Assert.False(settings.OverwriteExisting);
             Assert.False(settings.CreateMissingParameters);
+            Assert.Equal("Room Type", settings.KeyScheduleName);
+            Assert.Equal("Room Type", settings.KeyScheduleParameterName);
         }
 
         [Fact]
@@ -29,13 +31,17 @@ namespace OmniClass.Core.Tests
                 "dictionary = data/custom.csv\n" +
                 "numberParameter = OC Number\n" +
                 "titleParameter = OC Title\n" +
-                "overwriteExisting = true\n",
+                "overwriteExisting = true\n" +
+                "keyScheduleName = Room Style\n" +
+                "keyScheduleParameter = Room Style\n",
                 folder);
 
             Assert.Equal(Path.GetFullPath(Path.Combine(folder, "data", "custom.csv")), settings.DictionaryPath);
             Assert.Equal("OC Number", settings.NumberParameterName);
             Assert.Equal("OC Title", settings.TitleParameterName);
             Assert.True(settings.OverwriteExisting);
+            Assert.Equal("Room Style", settings.KeyScheduleName);
+            Assert.Equal("Room Style", settings.KeyScheduleParameterName);
         }
 
         [Fact]

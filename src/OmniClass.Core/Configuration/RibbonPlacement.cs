@@ -11,5 +11,6 @@ namespace OmniClass.Core.Configuration
         public const string ClassifyButton = "Classify\nRooms";
         public const string ExportButton = "Export\nRooms";
         public const string ImportButton = "Import\nRooms";
+        public const string KeyScheduleButton = "Key\nSchedule";
     }
 }

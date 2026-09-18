@@ -71,9 +71,27 @@ namespace OmniClass.Revit
                 Image = RibbonIcons.Load("import16.png")
             };
 
+            var keySchedule = new PushButtonData(
+                "OmniClassImportKeySchedule",
+                RibbonPlacement.KeyScheduleButton,
+                assembly,
+                typeof(ImportKeyScheduleCommand).FullName)
+            {
+                ToolTip = "Import unique room names from a CSV into a Room key schedule. " +
+                          "Creates the schedule if the project does not have one.",
+                LongDescription = "Best run once in the Arch template, then save the template so " +
+                                  "new projects already have a Room Type dropdown. Each CSV name " +
+                                  "becomes a key. Picking it on a room sets Name and, when " +
+                                  "Classification.Space / COBie parameters exist, OmniClass. " +
+                                  "Existing keys are updated; names not in the CSV are left alone.",
+                AvailabilityClassName = availability,
+                LargeImage = RibbonIcons.Load("key32.png"),
+                Image = RibbonIcons.Load("key16.png")
+            };
+
             panel.AddItem(classify);
             panel.AddSeparator();
-            panel.AddStackedItems(export, import);
+            panel.AddStackedItems(export, import, keySchedule);
 
             return Result.Succeeded;
         }
