@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using OmniClass.Core.Transfer;
@@ -62,6 +63,67 @@ namespace OmniClass.Core.Tests
             {
                 RoomTransferSheet.Header
             }));
+        }
+
+        [Fact]
+        public void UniqueKeepsOneRowPerNormalizedName()
+        {
+            var unique = RoomTransferSheet.Unique(new[]
+            {
+                new RoomTransferRow { RoomNumber = "101", Name = "W Room" },
+                new RoomTransferRow { RoomNumber = "102", Name = "W Room" },
+                new RoomTransferRow { RoomNumber = "103", Name = "W_Room", OmniClassNumber = "13-23 17 13", OmniClassName = "Women's Restroom" }
+            });
+
+            var row = Assert.Single(unique);
+            Assert.Equal("101", row.RoomNumber);
+            Assert.Equal("W Room", row.Name);
+            Assert.Equal("13-23 17 13", row.OmniClassNumber);
+            Assert.Equal("Women's Restroom", row.OmniClassName);
+        }
+
+        [Fact]
+        public void MergeUniqueAppendsOnlyNewNamesAndFillsBlankOmniClass()
+        {
+            var existing = new[]
+            {
+                new RoomTransferRow { RoomNumber = "101", Name = "W Room" },
+                new RoomTransferRow { RoomNumber = "201", Name = "Office", OmniClassNumber = "13-55 11", OmniClassName = "Office Spaces" }
+            };
+
+            var incoming = new[]
+            {
+                new RoomTransferRow { RoomNumber = "12", Name = "W Room", OmniClassNumber = "13-23 17 13", OmniClassName = "Women's Restroom" },
+                new RoomTransferRow { RoomNumber = "13", Name = "Office" },
+                new RoomTransferRow { RoomNumber = "14", Name = "Break Room", OmniClassNumber = "13-57 17 13", OmniClassName = "Break Room" }
+            };
+
+            var merged = RoomTransferSheet.MergeUnique(existing, incoming);
+
+            Assert.Equal(1, merged.Added);
+            Assert.Equal(1, merged.FilledClassification);
+            Assert.Equal(1, merged.AlreadyPresent);
+            Assert.Equal(3, merged.Rows.Count);
+
+            var wRoom = Assert.Single(merged.Rows, r => r.Name == "W Room");
+            Assert.Equal("13-23 17 13", wRoom.OmniClassNumber);
+            Assert.Contains(merged.Rows, r => r.Name == "Break Room");
+        }
+
+        [Fact]
+        public void SecondMergeOfTheSameNamesAddsNothing()
+        {
+            var first = new[]
+            {
+                new RoomTransferRow { RoomNumber = "101", Name = "Corridor", OmniClassNumber = "13-25 11 11", OmniClassName = "Corridor" }
+            };
+
+            var sheet = RoomTransferSheet.MergeUnique(Array.Empty<RoomTransferRow>(), first);
+            var again = RoomTransferSheet.MergeUnique(sheet.Rows, first);
+
+            Assert.Equal(0, again.Added);
+            Assert.Equal(1, again.AlreadyPresent);
+            Assert.Single(again.Rows);
         }
 
         private static System.Collections.Generic.IReadOnlyList<string[]> Parse(string text)

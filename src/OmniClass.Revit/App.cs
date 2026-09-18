@@ -42,11 +42,12 @@ namespace OmniClass.Revit
                 assembly,
                 typeof(ExportRoomsCommand).FullName)
             {
-                ToolTip = "Export Room Number, Name, OmniClass Number, and OmniClass Name to a CSV file.",
-                LongDescription = "Writes one row per room. OmniClass columns come from " +
-                                  "Classification.Space.* when already filled, otherwise from a " +
-                                  "dictionary match. Edit the names in Excel for consistency, then " +
-                                  "use Import Rooms to apply them.",
+                ToolTip = "Export unique Room Number, Name, OmniClass Number, and OmniClass Name. " +
+                          "Saving to an existing CSV appends only new names.",
+                LongDescription = "Writes one row per distinct room name. OmniClass columns come " +
+                                  "from Classification.Space.* when already filled, otherwise from a " +
+                                  "dictionary match. Save the same master file from several projects " +
+                                  "to append unique names only. Then use Import Rooms to apply them.",
                 AvailabilityClassName = availability,
                 LargeImage = RibbonIcons.Load("export32.png"),
                 Image = RibbonIcons.Load("export16.png")

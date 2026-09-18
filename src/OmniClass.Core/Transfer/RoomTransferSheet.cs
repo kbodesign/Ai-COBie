@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using OmniClass.Core.Io;
+using OmniClass.Core.Text;
 
 namespace OmniClass.Core.Transfer
 {
@@ -24,6 +25,14 @@ namespace OmniClass.Core.Transfer
             string.IsNullOrWhiteSpace(RoomNumber)
             && string.IsNullOrWhiteSpace(Name)
             && !HasOmniClass;
+    }
+
+    public sealed class RoomTransferMergeResult
+    {
+        public int Added { get; set; }
+        public int FilledClassification { get; set; }
+        public int AlreadyPresent { get; set; }
+        public List<RoomTransferRow> Rows { get; } = new List<RoomTransferRow>();
     }
 
     /// <summary>
@@ -62,6 +71,110 @@ namespace OmniClass.Core.Transfer
             {
                 Write(writer, rows);
             }
+        }
+
+        /// <summary>
+        /// One row per distinct room name (normalized), so "W Room" and "W Room 2"
+        /// count once. When the same name appears with and without OmniClass, the
+        /// classified row wins.
+        /// </summary>
+        public static List<RoomTransferRow> Unique(IEnumerable<RoomTransferRow> rows)
+        {
+            var result = new List<RoomTransferRow>();
+            var index = new Dictionary<string, int>(StringComparer.Ordinal);
+
+            foreach (var row in rows ?? Enumerable.Empty<RoomTransferRow>())
+            {
+                if (row == null || row.IsBlank) continue;
+
+                var key = UniqueKey(row);
+                if (key.Length == 0) continue;
+
+                if (!index.TryGetValue(key, out var at))
+                {
+                    index.Add(key, result.Count);
+                    result.Add(Copy(row));
+                    continue;
+                }
+
+                var existing = result[at];
+                if (!existing.HasOmniClass && row.HasOmniClass)
+                {
+                    existing.OmniClassNumber = row.OmniClassNumber ?? string.Empty;
+                    existing.OmniClassName = row.OmniClassName ?? string.Empty;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Appends incoming names that are not already on the master list. Duplicate
+        /// names are skipped. If a name is already present with blank OmniClass and
+        /// the incoming row has a classification, that classification is filled in.
+        /// </summary>
+        public static RoomTransferMergeResult MergeUnique(
+            IEnumerable<RoomTransferRow> existing,
+            IEnumerable<RoomTransferRow> incoming)
+        {
+            var merged = new RoomTransferMergeResult();
+            var index = new Dictionary<string, int>(StringComparer.Ordinal);
+
+            foreach (var row in Unique(existing))
+            {
+                var key = UniqueKey(row);
+                if (key.Length == 0) continue;
+                index[key] = merged.Rows.Count;
+                merged.Rows.Add(row);
+            }
+
+            foreach (var row in Unique(incoming))
+            {
+                var key = UniqueKey(row);
+                if (key.Length == 0) continue;
+
+                if (!index.TryGetValue(key, out var at))
+                {
+                    index.Add(key, merged.Rows.Count);
+                    merged.Rows.Add(Copy(row));
+                    merged.Added++;
+                    continue;
+                }
+
+                var current = merged.Rows[at];
+                if (!current.HasOmniClass && row.HasOmniClass)
+                {
+                    current.OmniClassNumber = row.OmniClassNumber ?? string.Empty;
+                    current.OmniClassName = row.OmniClassName ?? string.Empty;
+                    merged.FilledClassification++;
+                    continue;
+                }
+
+                merged.AlreadyPresent++;
+            }
+
+            return merged;
+        }
+
+        internal static string UniqueKey(RoomTransferRow row)
+        {
+            if (row == null) return string.Empty;
+            var nameKey = RoomNameNormalizer.Key(row.Name);
+            if (nameKey.Length > 0) return "N:" + nameKey;
+
+            var number = (row.RoomNumber ?? string.Empty).Trim();
+            return number.Length == 0 ? string.Empty : "R:" + number;
+        }
+
+        private static RoomTransferRow Copy(RoomTransferRow row)
+        {
+            return new RoomTransferRow
+            {
+                RoomNumber = row.RoomNumber ?? string.Empty,
+                Name = row.Name ?? string.Empty,
+                OmniClassNumber = row.OmniClassNumber ?? string.Empty,
+                OmniClassName = row.OmniClassName ?? string.Empty
+            };
         }
 
         public static IReadOnlyList<RoomTransferRow> FromFile(string path)

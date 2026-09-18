@@ -81,7 +81,8 @@ exports where nobody checks it again. So the guardrails matter more than the hit
 
 The dictionary is the product, and it is grown from evidence rather than imagination:
 
-1. **Export Rooms** from a finished model (Room Number, Name, OmniClass Number, OmniClass Name).
+1. **Export Rooms** from finished models into the same `master rooms.csv`. Only unique
+   names are appended, so several projects become one master list.
 2. **Curate** names in Excel so every project uses the same room names.
 3. **Import Rooms** to reuse those names. If Classification.Space / COBie parameters are on
    the rooms, OmniClass Number and Name are written too.
@@ -197,11 +198,12 @@ The classify preview pre-selects only exact dictionary hits. Probable and ambigu
 are listed for review. Unplaced rooms, not-enclosed rooms, rooms owned by another user, and
 rooms that already have a value are left alone unless `overwriteExisting = true`. A second
 run does not overwrite populated values and does not try to recreate shared parameters
-(that is what caused the GUID error). Export Rooms writes one CSV row per room (Room Number,
-Name, OmniClass Number, OmniClass Name). Import Rooms matches by Room Number then Name,
-lets you check which rows to apply, updates names for consistency, and writes OmniClass
-into Classification.Space.* / COBie.Space.Category when those parameters are on the room.
-The whole write is one undo.
+(that is what caused the GUID error). Export Rooms writes unique names (Room Number, Name,
+OmniClass Number, OmniClass Name). Saving to an existing CSV appends only names that are
+not already on the list, so several projects can build one master file. Import Rooms matches
+by Room Number then Name, lets you check which rows to apply, updates names for consistency,
+and writes OmniClass into Classification.Space.* / COBie.Space.Category when those
+parameters are on the room. The whole write is one undo.
 
 Dictionary version stamping is not in yet: a later pass should record which dictionary
 classified the model so a correction can find the rooms it touched.

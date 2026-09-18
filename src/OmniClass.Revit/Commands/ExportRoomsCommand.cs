@@ -49,28 +49,56 @@ namespace OmniClass.Revit.Commands
             var dictionary = CommandSupport.TryLoadDictionary(settings, warnIfMissing: false, requireClean: false);
             var classifier = dictionary == null ? null : new RoomClassifier(dictionary);
 
-            var rows = rooms.Select(room => ToTransfer(room, classifier)).ToList();
+            var incoming = RoomTransferSheet.Unique(rooms.Select(room => ToTransfer(room, classifier)));
 
             var dialog = new SaveFileDialog
             {
-                Title = "Export rooms",
+                Title = "Export rooms — unique names (append to an existing master list)",
                 Filter = "CSV (*.csv)|*.csv",
-                FileName = SuggestedFileName(document),
-                OverwritePrompt = true
+                FileName = "master rooms.csv",
+                OverwritePrompt = false
             };
 
             if (dialog.ShowDialog() != true) return Result.Cancelled;
 
-            RoomTransferSheet.WriteFile(dialog.FileName, rows);
+            if (File.Exists(dialog.FileName))
+            {
+                var raw = OmniClass.Core.Io.DelimitedText.ParseFile(dialog.FileName);
+                if (RoomTransferSheet.LooksLikeAliasDictionary(raw))
+                {
+                    CommandSupport.Warn(
+                        "Not a room export",
+                        "That file looks like the alias dictionary (Number, Name, Room Name 1, …).\n\n" +
+                        "Pick the CSV from Export Rooms, or a new file, to build a master list.");
+                    return Result.Cancelled;
+                }
 
-            var classified = rows.Count(r => r.HasOmniClass);
-            CommandSupport.Inform(
-                "Rooms exported",
-                rooms.Count + " room" + (rooms.Count == 1 ? "" : "s") + " written.\n" +
-                classified + " with an OmniClass number and name.\n\n" +
-                "Columns: Room Number, Name, OmniClass Number, OmniClass Name.\n" +
-                "Edit names for consistency, then use Import Rooms to apply them.\n\n" +
-                "Saved to:\n" + dialog.FileName);
+                var merged = RoomTransferSheet.MergeUnique(RoomTransferSheet.FromRows(raw), incoming);
+                RoomTransferSheet.WriteFile(dialog.FileName, merged.Rows);
+
+                CommandSupport.Inform(
+                    "Master list updated",
+                    incoming.Count + " unique name" + (incoming.Count == 1 ? "" : "s") + " in this project.\n" +
+                    merged.Added + " added to the master list" +
+                    (merged.FilledClassification == 0
+                        ? ""
+                        : ", " + merged.FilledClassification + " existing name" +
+                          (merged.FilledClassification == 1 ? "" : "s") + " filled in with OmniClass") +
+                    (merged.AlreadyPresent == 0
+                        ? "."
+                        : ", " + merged.AlreadyPresent + " already on the list.") +
+                    "\n\n" + merged.Rows.Count + " unique names in:\n" + dialog.FileName);
+            }
+            else
+            {
+                RoomTransferSheet.WriteFile(dialog.FileName, incoming);
+                CommandSupport.Inform(
+                    "Rooms exported",
+                    incoming.Count + " unique name" + (incoming.Count == 1 ? "" : "s") + " written.\n" +
+                    incoming.Count(r => r.HasOmniClass) + " with an OmniClass number and name.\n\n" +
+                    "Save to the same file from other projects to append unique names only.\n\n" +
+                    "Saved to:\n" + dialog.FileName);
+            }
 
             return Result.Succeeded;
         }
@@ -97,12 +125,6 @@ namespace OmniClass.Revit.Commands
                 OmniClassNumber = number,
                 OmniClassName = title
             };
-        }
-
-        private static string SuggestedFileName(Document document)
-        {
-            var title = string.IsNullOrEmpty(document.Title) ? "rooms" : Path.GetFileNameWithoutExtension(document.Title);
-            return title + " rooms.csv";
         }
     }
 }
