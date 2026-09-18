@@ -133,8 +133,10 @@ Number,Name,Room Name 1,Room Name 2,Room Name 3,Room Name 4,Room Name 5,Room Nam
 
 A room named `Electrical Room` or `Women's Restroom` matches from column B with no extra
 alias. C+ is only for names people actually type (`WRR`, `W Room`, `Ladies`). Export Rooms
-writes Room Number, Name, OmniClass Number, and OmniClass Name so the list can be edited
-and imported. An older sheet that still has a level digit in column C is still accepted.
+writes Name, OmniClass Number, and OmniClass Name so the list can be edited and imported.
+Room Number is omitted: it is a unique Mark and names are reused. Older CSVs that still have
+a Room Number column still load; Import ignores that column. An older alias sheet that still
+has a level digit in column C is still accepted.
 
 Two things to watch:
 
@@ -198,12 +200,13 @@ The classify preview pre-selects only exact dictionary hits. Probable and ambigu
 are listed for review. Unplaced rooms, not-enclosed rooms, rooms owned by another user, and
 rooms that already have a value are left alone unless `overwriteExisting = true`. A second
 run does not overwrite populated values and does not try to recreate shared parameters
-(that is what caused the GUID error). Export Rooms writes unique names (Room Number, Name,
-OmniClass Number, OmniClass Name). Saving to an existing CSV appends only names that are
-not already on the list, so several projects can build one master file. Import Rooms matches
-by Room Number then Name, lets you check which rows to apply, updates names for consistency,
-and writes OmniClass into Classification.Space.* / COBie.Space.Category when those
-parameters are on the room. The whole write is one undo.
+(that is what caused the GUID error). Export Rooms writes unique names (Name, OmniClass
+Number, OmniClass Name). Room Number is not exported. Saving to an existing CSV appends
+only names that are not already on the list, so several projects can build one master file.
+Import Rooms matches by Name only — never by Room Number / Mark — so changing a mark to
+match a CSV row cannot rename the room. Every room with that name is listed. Checked rows
+can unify spelling, and OmniClass is written into Classification.Space.* /
+COBie.Space.Category when those parameters are on the room. The whole write is one undo.
 
 Dictionary version stamping is not in yet: a later pass should record which dictionary
 classified the model so a correction can find the rooms it touched.

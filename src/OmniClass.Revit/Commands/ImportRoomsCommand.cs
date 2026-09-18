@@ -57,7 +57,7 @@ namespace OmniClass.Revit.Commands
                 CommandSupport.Warn(
                     "Not a room export",
                     "That file looks like the alias dictionary (Number, Name, Room Name 1, …).\n\n" +
-                    "Use a file from Export Rooms: Room Number, Name, OmniClass Number, OmniClass Name.");
+                    "Use a file from Export Rooms: Name, OmniClass Number, OmniClass Name.");
                 return Result.Cancelled;
             }
 

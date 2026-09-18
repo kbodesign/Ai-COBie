@@ -30,7 +30,7 @@
       <DataGrid.Columns>
         <DataGridCheckBoxColumn Header="Apply" Binding="{Binding Apply, UpdateSourceTrigger=PropertyChanged}"
                                 IsReadOnly="False" Width="56"/>
-        <DataGridTextColumn Header="Room Number" Binding="{Binding RoomNumber}" IsReadOnly="True" Width="100"/>
+        <DataGridTextColumn Header="Mark" Binding="{Binding RoomNumber}" IsReadOnly="True" Width="80"/>
         <DataGridTextColumn Header="Current Name" Binding="{Binding CurrentName}" IsReadOnly="True" Width="150"/>
         <DataGridTextColumn Header="Import Name" Binding="{Binding ImportName}" IsReadOnly="True" Width="150"/>
         <DataGridTextColumn Header="OmniClass Number" Binding="{Binding OmniClassNumber}" IsReadOnly="True" Width="140"/>

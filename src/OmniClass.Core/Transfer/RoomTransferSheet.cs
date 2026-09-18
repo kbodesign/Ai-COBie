@@ -8,8 +8,9 @@ using OmniClass.Core.Text;
 namespace OmniClass.Core.Transfer
 {
     /// <summary>
-    /// One room on the Export/Import sheet: architectural Number and Name, then the
-    /// OmniClass Table 13 number and title that Assign Classification would write.
+    /// One room on the Export/Import sheet: reusable Name, then the OmniClass
+    /// Table 13 number and title that Assign Classification would write. Room
+    /// Number / Mark is not part of the sheet; it may still be present on older CSVs.
     /// </summary>
     public sealed class RoomTransferRow
     {
@@ -36,15 +37,16 @@ namespace OmniClass.Core.Transfer
     }
 
     /// <summary>
-    /// CSV used by Export Rooms / Import Rooms. Columns are Room Number, Name,
-    /// OmniClass Number, OmniClass Name. Header aliases are accepted so an Excel
-    /// save-as or a Classification.Space.* schedule still loads.
+    /// CSV used by Export Rooms / Import Rooms. Columns are Name, OmniClass Number,
+    /// OmniClass Name. Room Number is not written: it is a unique Mark and is
+    /// irrelevant to name reuse. Older files that still have a Room Number column
+    /// are loaded; that column is ignored when matching on import.
     /// </summary>
     public static class RoomTransferSheet
     {
         public static readonly string[] Header =
         {
-            "Room Number", "Name", "OmniClass Number", "OmniClass Name"
+            "Name", "OmniClass Number", "OmniClass Name"
         };
 
         public static void Write(TextWriter writer, IEnumerable<RoomTransferRow> rows)
@@ -57,7 +59,6 @@ namespace OmniClass.Core.Transfer
                 if (row == null || row.IsBlank) continue;
                 writer.WriteLine(DelimitedText.FormatRow(new[]
                 {
-                    row.RoomNumber ?? string.Empty,
                     row.Name ?? string.Empty,
                     row.OmniClassNumber ?? string.Empty,
                     row.OmniClassName ?? string.Empty
@@ -160,10 +161,7 @@ namespace OmniClass.Core.Transfer
         {
             if (row == null) return string.Empty;
             var nameKey = RoomNameNormalizer.Key(row.Name);
-            if (nameKey.Length > 0) return "N:" + nameKey;
-
-            var number = (row.RoomNumber ?? string.Empty).Trim();
-            return number.Length == 0 ? string.Empty : "R:" + number;
+            return nameKey.Length == 0 ? string.Empty : "N:" + nameKey;
         }
 
         private static RoomTransferRow Copy(RoomTransferRow row)
@@ -234,7 +232,7 @@ namespace OmniClass.Core.Transfer
 
         private static ColumnMap DefaultMap()
         {
-            return new ColumnMap { RoomNumber = 0, Name = 1, OmniClassNumber = 2, OmniClassName = 3 };
+            return new ColumnMap { RoomNumber = -1, Name = 0, OmniClassNumber = 1, OmniClassName = 2 };
         }
 
         private static ColumnMap MapHeader(string[] header)
@@ -252,10 +250,9 @@ namespace OmniClass.Core.Transfer
                 else if (IsName(cell) && map.Name < 0) map.Name = i;
             }
 
-            if (map.RoomNumber < 0) map.RoomNumber = 0;
-            if (map.Name < 0) map.Name = 1;
-            if (map.OmniClassNumber < 0) map.OmniClassNumber = 2;
-            if (map.OmniClassName < 0) map.OmniClassName = 3;
+            if (map.Name < 0) map.Name = map.RoomNumber >= 0 ? 1 : 0;
+            if (map.OmniClassNumber < 0) map.OmniClassNumber = map.RoomNumber >= 0 ? 2 : 1;
+            if (map.OmniClassName < 0) map.OmniClassName = map.RoomNumber >= 0 ? 3 : 2;
             return map;
         }
 
@@ -263,7 +260,7 @@ namespace OmniClass.Core.Transfer
         {
             var first = NormalizeHeader(DelimitedText.Cell(row, 0));
             if (first.Length == 0) return false;
-            return IsRoomNumber(first) || first == "NUMBER" || IsOmniClassNumber(first);
+            return IsName(first) || IsRoomNumber(first) || first == "NUMBER" || IsOmniClassNumber(first);
         }
 
         private static bool IsRoomNumber(string cell)

@@ -42,10 +42,11 @@ namespace OmniClass.Revit
                 assembly,
                 typeof(ExportRoomsCommand).FullName)
             {
-                ToolTip = "Export unique Room Number, Name, OmniClass Number, and OmniClass Name. " +
-                          "Saving to an existing CSV appends only new names.",
-                LongDescription = "Writes one row per distinct room name. OmniClass columns come " +
-                                  "from Classification.Space.* when already filled, otherwise from a " +
+                ToolTip = "Export unique Name, OmniClass Number, and OmniClass Name. " +
+                          "Room Number is not exported. Saving to an existing CSV appends only new names.",
+                LongDescription = "Writes one row per distinct room name. Room Number / Mark is omitted " +
+                                  "because it is unique per room and names are reused. OmniClass columns " +
+                                  "come from Classification.Space.* when already filled, otherwise from a " +
                                   "dictionary match. Save the same master file from several projects " +
                                   "to append unique names only. Then use Import Rooms to apply them.",
                 AvailabilityClassName = availability,
@@ -61,10 +62,10 @@ namespace OmniClass.Revit
             {
                 ToolTip = "Import a room CSV to reuse names and, when COBie is on the project, " +
                           "write OmniClass classifications.",
-                LongDescription = "Matches by Room Number, then by Name. Checked rows update the " +
-                                  "room name for consistency. If Classification.Space.* or " +
-                                  "COBie.Space.Category is on the room, OmniClass Number and Name " +
-                                  "are written the same way as Assign Classification.",
+                LongDescription = "Matches by room Name only (never by Room Number / Mark). Every " +
+                                  "room with that name is updated. Checked rows can unify spelling. " +
+                                  "If Classification.Space.* or COBie.Space.Category is on the room, " +
+                                  "OmniClass Number and Name are written the same way as Assign Classification.",
                 AvailabilityClassName = availability,
                 LargeImage = RibbonIcons.Load("import32.png"),
                 Image = RibbonIcons.Load("import16.png")

@@ -120,7 +120,6 @@ namespace OmniClass.Revit.Commands
 
             return new RoomTransferRow
             {
-                RoomNumber = room.Number ?? string.Empty,
                 Name = room.Name ?? string.Empty,
                 OmniClassNumber = number,
                 OmniClassName = title

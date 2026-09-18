@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OmniClass.Core.Text;
 
 namespace OmniClass.Core.Transfer
 {
@@ -46,7 +47,9 @@ namespace OmniClass.Core.Transfer
     }
 
     /// <summary>
-    /// Matches exported rows to rooms in the model: Room Number first, then Name.
+    /// Matches exported rows to rooms in the model by Name only (exact, then
+    /// normalized so "W Room" and "W_Room" are the same). Room Number / Mark is
+    /// never used: it is unique per room and names are reused across rooms.
     /// Classification is only planned when the project already has the COBie /
     /// Classification.Space parameters (COBie is "activated").
     /// </summary>
@@ -57,25 +60,29 @@ namespace OmniClass.Core.Transfer
             IEnumerable<ProjectRoomRef> rooms)
         {
             var roomList = (rooms ?? Enumerable.Empty<ProjectRoomRef>()).Where(r => r != null).ToList();
-            var byNumber = Index(roomList, r => r.Number);
-            var byName = Index(roomList, r => r.Name);
+            var byNormalizedName = Index(roomList, r => RoomNameNormalizer.Key(r.Name));
             var actions = new List<RoomImportAction>();
 
-            foreach (var row in rows ?? Enumerable.Empty<RoomTransferRow>())
+            foreach (var row in RoomTransferSheet.Unique(rows))
             {
                 if (row == null || row.IsBlank) continue;
 
+                if (string.IsNullOrWhiteSpace(row.Name))
+                {
+                    actions.Add(new RoomImportAction
+                    {
+                        Source = row,
+                        Target = null,
+                        Match = "None",
+                        Note = "CSV row has no room name."
+                    });
+                    continue;
+                }
+
                 IReadOnlyList<ProjectRoomRef> matches = Array.Empty<ProjectRoomRef>();
                 var match = "None";
-
-                if (!string.IsNullOrWhiteSpace(row.RoomNumber)
-                    && byNumber.TryGetValue(row.RoomNumber.Trim(), out var numbered))
-                {
-                    matches = numbered;
-                    match = "Number";
-                }
-                else if (!string.IsNullOrWhiteSpace(row.Name)
-                         && byName.TryGetValue(row.Name.Trim(), out var named))
+                var key = RoomNameNormalizer.Key(row.Name);
+                if (key.Length > 0 && byNormalizedName.TryGetValue(key, out var named))
                 {
                     matches = named;
                     match = "Name";
@@ -88,7 +95,7 @@ namespace OmniClass.Core.Transfer
                         Source = row,
                         Target = null,
                         Match = "None",
-                        Note = "No matching room in this project."
+                        Note = "No matching room name in this project."
                     });
                     continue;
                 }
@@ -118,13 +125,13 @@ namespace OmniClass.Core.Transfer
             }
 
             if (action.UpdateClassification && action.UpdateName)
-                action.Note = "Update name and classification";
+                action.Note = "Update name spelling and classification";
             else if (action.UpdateClassification)
                 action.Note = "Update classification";
             else if (action.UpdateName)
                 action.Note = target.HasCobieParameters
-                    ? "Update name"
-                    : "Update name (COBie/classification parameters are not on this room)";
+                    ? "Update name spelling"
+                    : "Update name spelling (COBie/classification parameters are not on this room)";
             else if (row.HasOmniClass && !target.HasCobieParameters)
                 action.Note = "COBie/classification parameters are not on this room";
             else

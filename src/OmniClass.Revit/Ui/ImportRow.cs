@@ -28,7 +28,7 @@ namespace OmniClass.Revit.Ui
         }
 
         public bool CanApply => Action.CanApply;
-        public string RoomNumber => Action.Source?.RoomNumber ?? string.Empty;
+        public string RoomNumber => Action.Target?.Number ?? string.Empty;
         public string CurrentName => Action.Target?.Name ?? string.Empty;
         public string ImportName => Action.Source?.Name ?? string.Empty;
         public string OmniClassNumber => Action.Source?.OmniClassNumber ?? string.Empty;

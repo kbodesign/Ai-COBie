@@ -9,7 +9,7 @@ namespace OmniClass.Core.Tests
     public class RoomTransferSheetTests
     {
         [Fact]
-        public void WriteThenLoadKeepsRoomNumberNameAndOmniClass()
+        public void WriteThenLoadKeepsNameAndOmniClassWithoutRoomNumber()
         {
             var rows = new[]
             {
@@ -26,15 +26,33 @@ namespace OmniClass.Core.Tests
             RoomTransferSheet.Write(writer, rows);
             var text = writer.ToString();
 
-            Assert.StartsWith("Room Number,Name,OmniClass Number,OmniClass Name", text);
-            Assert.Contains("101,W Room,13-23 17 13,Women's Restroom", text);
+            Assert.StartsWith("Name,OmniClass Number,OmniClass Name", text);
+            Assert.DoesNotContain("Room Number", text);
+            Assert.DoesNotContain("101", text);
+            Assert.Contains("W Room,13-23 17 13,Women's Restroom", text);
 
             var loaded = RoomTransferSheet.FromRows(Parse(text));
             var row = Assert.Single(loaded);
-            Assert.Equal("101", row.RoomNumber);
+            Assert.Equal("", row.RoomNumber);
             Assert.Equal("W Room", row.Name);
             Assert.Equal("13-23 17 13", row.OmniClassNumber);
             Assert.Equal("Women's Restroom", row.OmniClassName);
+        }
+
+        [Fact]
+        public void LoadsLegacyRoomNumberColumnWithoutUsingItAsTheName()
+        {
+            var loaded = RoomTransferSheet.FromRows(new[]
+            {
+                new[] { "Room Number", "Name", "OmniClass Number", "OmniClass Name" },
+                new[] { "106", "EMR", "13-55 11 17", "Exam Room" }
+            });
+
+            var row = Assert.Single(loaded);
+            Assert.Equal("106", row.RoomNumber);
+            Assert.Equal("EMR", row.Name);
+            Assert.Equal("13-55 11 17", row.OmniClassNumber);
+            Assert.Equal("Exam Room", row.OmniClassName);
         }
 
         [Fact]
@@ -48,6 +66,7 @@ namespace OmniClass.Core.Tests
 
             var row = Assert.Single(loaded);
             Assert.Equal("102", row.RoomNumber);
+            Assert.Equal("MR", row.Name);
             Assert.Equal("13-23 17 11", row.OmniClassNumber);
             Assert.Equal("Men's Restroom", row.OmniClassName);
         }
@@ -76,7 +95,6 @@ namespace OmniClass.Core.Tests
             });
 
             var row = Assert.Single(unique);
-            Assert.Equal("101", row.RoomNumber);
             Assert.Equal("W Room", row.Name);
             Assert.Equal("13-23 17 13", row.OmniClassNumber);
             Assert.Equal("Women's Restroom", row.OmniClassName);
@@ -138,17 +156,17 @@ namespace OmniClass.Core.Tests
     public class RoomImportPlannerTests
     {
         [Fact]
-        public void MatchesByRoomNumberAndPlansNameAndClassification()
+        public void DoesNotRenameWhenOnlyMarkMatches()
         {
             var actions = RoomImportPlanner.Plan(
                 new[]
                 {
                     new RoomTransferRow
                     {
-                        RoomNumber = "101",
-                        Name = "Women's Restroom",
-                        OmniClassNumber = "13-23 17 13",
-                        OmniClassName = "Women's Restroom"
+                        RoomNumber = "106",
+                        Name = "EMR",
+                        OmniClassNumber = "13-55 11 17",
+                        OmniClassName = "Exam Room"
                     }
                 },
                 new[]
@@ -156,29 +174,60 @@ namespace OmniClass.Core.Tests
                     new ProjectRoomRef
                     {
                         Id = "1",
-                        Number = "101",
-                        Name = "W Room",
+                        Number = "106",
+                        Name = "Waiting",
                         IsWritable = true,
                         HasCobieParameters = true
                     }
                 });
 
             var action = Assert.Single(actions);
-            Assert.Equal("Number", action.Match);
-            Assert.True(action.UpdateName);
-            Assert.True(action.UpdateClassification);
-            Assert.True(action.DefaultApply);
+            Assert.Equal("None", action.Match);
+            Assert.Null(action.Target);
+            Assert.False(action.UpdateName);
+            Assert.False(action.UpdateClassification);
+            Assert.False(action.CanApply);
         }
 
         [Fact]
-        public void MatchesByNameWhenRoomNumberIsMissing()
+        public void MatchesEveryRoomWithTheSameNameRegardlessOfMark()
         {
             var actions = RoomImportPlanner.Plan(
                 new[]
                 {
                     new RoomTransferRow
                     {
-                        RoomNumber = "",
+                        Name = "EMR",
+                        OmniClassNumber = "13-55 11 17",
+                        OmniClassName = "Exam Room"
+                    }
+                },
+                new[]
+                {
+                    Room("1", "106", "EMR"),
+                    Room("2", "107", "EMR"),
+                    Room("3", "108", "Waiting")
+                });
+
+            Assert.Equal(2, actions.Count);
+            Assert.All(actions, a =>
+            {
+                Assert.Equal("Name", a.Match);
+                Assert.Equal("EMR", a.Target.Name);
+                Assert.False(a.UpdateName);
+                Assert.True(a.UpdateClassification);
+            });
+            Assert.Equal(new[] { "106", "107" }, actions.Select(a => a.Target.Number).ToArray());
+        }
+
+        [Fact]
+        public void MatchesNormalizedNameAndPlansSpellingUpdate()
+        {
+            var actions = RoomImportPlanner.Plan(
+                new[]
+                {
+                    new RoomTransferRow
+                    {
                         Name = "W Room",
                         OmniClassNumber = "13-23 17 13",
                         OmniClassName = "Women's Restroom"
@@ -186,14 +235,33 @@ namespace OmniClass.Core.Tests
                 },
                 new[]
                 {
-                    new ProjectRoomRef
+                    Room("1", "205", "W_Room")
+                });
+
+            var action = Assert.Single(actions);
+            Assert.Equal("Name", action.Match);
+            Assert.True(action.UpdateName);
+            Assert.Equal("W Room", action.Source.Name);
+            Assert.True(action.UpdateClassification);
+        }
+
+        [Fact]
+        public void MatchesByNameAndPlansClassificationWithoutRenaming()
+        {
+            var actions = RoomImportPlanner.Plan(
+                new[]
+                {
+                    new RoomTransferRow
                     {
-                        Id = "1",
-                        Number = "205",
+                        RoomNumber = "999",
                         Name = "W Room",
-                        IsWritable = true,
-                        HasCobieParameters = true
+                        OmniClassNumber = "13-23 17 13",
+                        OmniClassName = "Women's Restroom"
                     }
+                },
+                new[]
+                {
+                    Room("1", "205", "W Room")
                 });
 
             var action = Assert.Single(actions);
@@ -210,7 +278,6 @@ namespace OmniClass.Core.Tests
                 {
                     new RoomTransferRow
                     {
-                        RoomNumber = "101",
                         Name = "W Room",
                         OmniClassNumber = "13-23 17 13",
                         OmniClassName = "Women's Restroom"
@@ -229,6 +296,7 @@ namespace OmniClass.Core.Tests
                 });
 
             var action = Assert.Single(actions);
+            Assert.Equal("Name", action.Match);
             Assert.False(action.UpdateClassification);
             Assert.False(action.CanApply);
             Assert.Contains("COBie", action.Note);
@@ -252,6 +320,18 @@ namespace OmniClass.Core.Tests
             Assert.Null(action.Target);
             Assert.False(action.CanApply);
             Assert.False(action.DefaultApply);
+        }
+
+        private static ProjectRoomRef Room(string id, string number, string name)
+        {
+            return new ProjectRoomRef
+            {
+                Id = id,
+                Number = number,
+                Name = name,
+                IsWritable = true,
+                HasCobieParameters = true
+            };
         }
     }
 }
