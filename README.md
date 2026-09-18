@@ -64,7 +64,7 @@ off, keyword blank) means a careless click cannot delete anything.
 | 2 | Confirm Purge | `false` | `false` = report only. `true` = the team authorises deletion. |
 | 3 | Confirmation Keyword | blank | Must read `PURGE` (case and surrounding spaces are ignored) before anything is deleted. |
 | 4 | Show Confirmation Dialog in Revit | `true` | Shows a Yes/No dialog with the element count, the group breakdown and the report path. |
-| 5 | Max Purge Passes | `5` | Purging repeats until nothing new appears, because some elements only become unused once the elements that referenced them are gone. |
+| 5 | Max Purge Passes (1-10) | `5` | Purging repeats until nothing new appears, because some elements only become unused once the elements that referenced them are gone. Typed as text so the graph avoids slider nodes, whose concrete type has changed between Dynamo releases. |
 
 ## The Excel output
 

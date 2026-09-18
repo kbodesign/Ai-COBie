@@ -84,20 +84,6 @@ def boolean_node(key, value, description):
     }
 
 
-def code_block_node(key, code, description):
-    out = port(key, "out", 0, "", "Line 1")
-    return {
-        "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
-        "Id": guid(key, "node"),
-        "NodeType": "CodeBlockNode",
-        "Inputs": [],
-        "Outputs": [out],
-        "Replication": "Disabled",
-        "Description": description,
-        "Code": code,
-    }
-
-
 def python_node(key, code, input_count):
     inputs = [
         port(key, "in", index, "IN[%d]" % index, "Input #%d" % index) for index in range(input_count)
@@ -237,13 +223,15 @@ def build_graph(revit_year, revit_label, script_source):
         ),
         (
             "max_passes",
-            code_block_node(
+            # A string rather than a slider: number sliders have changed concrete
+            # type between Dynamo releases, and the script parses the value.
+            string_node(
                 "max_passes",
-                "5;",
-                "How many detect-and-delete passes to run; elements that only become unused "
-                "after their users are gone are picked up by later passes.",
+                "5",
+                "How many detect-and-delete passes to run (1-10); elements that only become "
+                "unused after their users are gone are picked up by later passes.",
             ),
-            "Max Purge Passes",
+            "Max Purge Passes (1-10)",
         ),
     ]
 

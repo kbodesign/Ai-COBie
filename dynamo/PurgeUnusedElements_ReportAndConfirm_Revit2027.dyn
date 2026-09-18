@@ -110,15 +110,15 @@
       "InputValue": true
     },
     {
-      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
       "Id": "9813caf8688a5c00ac9716fbc5891d6f",
-      "NodeType": "CodeBlockNode",
+      "NodeType": "StringInputNode",
       "Inputs": [],
       "Outputs": [
         {
           "Id": "3b31513e2adf5c329f1fb9d174a5ad03",
           "Name": "",
-          "Description": "Line 1",
+          "Description": "String",
           "UsingDefaultValue": false,
           "Level": 2,
           "UseLevels": false,
@@ -126,8 +126,8 @@
         }
       ],
       "Replication": "Disabled",
-      "Description": "How many detect-and-delete passes to run; elements that only become unused after their users are gone are picked up by later passes.",
-      "Code": "5;"
+      "Description": "How many detect-and-delete passes to run (1-10); elements that only become unused after their users are gone are picked up by later passes.",
+      "InputValue": "5"
     },
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
@@ -372,7 +372,7 @@
       },
       {
         "Id": "9813caf8688a5c00ac9716fbc5891d6f",
-        "Name": "Max Purge Passes",
+        "Name": "Max Purge Passes (1-10)",
         "IsSetAsInput": true,
         "IsSetAsOutput": false,
         "Excluded": false,

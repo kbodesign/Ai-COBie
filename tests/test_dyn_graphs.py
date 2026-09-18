@@ -18,7 +18,7 @@ EXPECTED_INPUT_LABELS = [
     "Confirm Purge (False = report only)",
     "Confirmation Keyword (type PURGE)",
     "Show Confirmation Dialog in Revit",
-    "Max Purge Passes",
+    "Max Purge Passes (1-10)",
 ]
 
 
@@ -120,17 +120,18 @@ class GraphWiringTests(unittest.TestCase):
         self.assertEqual(["Results"], outputs)
 
     def test_defaults_cannot_purge_anything(self):
-        values = {
-            node["NodeType"]: node["InputValue"]
-            for node in self.graph["Nodes"]
-            if "InputValue" in node
-        }
         booleans = [node["InputValue"] for node in self.graph["Nodes"] if node["NodeType"] == "BooleanInputNode"]
         strings = [node["InputValue"] for node in self.graph["Nodes"] if node["NodeType"] == "StringInputNode"]
-        self.assertIn(False, booleans)  # Confirm Purge
-        self.assertIn(True, booleans)  # Show Confirmation Dialog
-        self.assertEqual(["", "", ""], strings)  # folder, file name, keyword all blank
-        self.assertIn("BooleanInputNode", values)
+
+        self.assertEqual([False, True], booleans)  # Confirm Purge off, dialog on
+        # folder, file name and the confirmation keyword all blank; only the pass count is set
+        self.assertEqual(["", "", "", "5"], strings)
+
+    def test_only_node_types_present_in_every_dynamo_3_release_are_used(self):
+        # Sliders and other input nodes have changed concrete type between
+        # releases; these four have not.
+        allowed = {"StringInputNode", "BooleanInputNode", "PythonScriptNode", "ExtensionNode"}
+        self.assertEqual(allowed, {node["NodeType"] for node in self.graph["Nodes"]})
 
 
 class EmbeddedScriptTests(unittest.TestCase):
