@@ -60,7 +60,7 @@ off, keyword blank) means a careless click cannot delete anything.
 | # | Input | Default | Notes |
 | --- | --- | --- | --- |
 | 0 | Export Folder | blank | Blank = the model's folder, or `Documents` if the model is unsaved. Falls back to the temp folder if the path cannot be written. |
-| 1 | Report File Name | blank | Blank = `PurgeUnused_<model>_<yyyymmdd_hhmmss>`. A `.xlsx` suffix is not doubled. |
+| 1 | Report File Name | blank | Blank = `PurgeUnused_<model>_<yyyymmdd_hhmmss>`. A `.xlsx` suffix is not doubled, and an existing report is never overwritten - `_2`, `_3` … is appended instead. |
 | 2 | Confirm Purge | `false` | `false` = report only. `true` = the team authorises deletion. |
 | 3 | Confirmation Keyword | blank | Must read `PURGE` (case and surrounding spaces are ignored) before anything is deleted. |
 | 4 | Show Confirmation Dialog in Revit | `true` | Shows a Yes/No dialog with the element count, the group breakdown and the report path. |

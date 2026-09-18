@@ -117,7 +117,6 @@ PURGE_GROUPS = [
     ("FlexDuctType", "Flex Duct Types"),
     ("FlexPipeType", "Flex Pipe Types"),
     ("InsulationType", "Insulation Types"),
-    ("LinePatternElement", "Line Patterns"),
     ("ElementType", "Other Element Types"),
 ]
 
@@ -436,6 +435,18 @@ def write_workbook(path, sheets, creator=SCRIPT_NAME):
         package.writestr("xl/styles.xml", _STYLES_XML)
         for index, sheet in enumerate(sheets, start=1):
             package.writestr("xl/worksheets/sheet%d.xml" % index, _sheet_xml(sheet[1], sheet[2]))
+    return path
+
+
+def unique_path(path):
+    """Never overwrite an existing report - it may be the approved one."""
+    if not os.path.exists(path):
+        return path
+    base, extension = os.path.splitext(path)
+    for suffix in range(2, 1000):
+        candidate = "%s_%d%s" % (base, suffix, extension)
+        if not os.path.exists(candidate):
+            return candidate
     return path
 
 
@@ -1014,7 +1025,7 @@ def main():
 
     info = document_info(document)
     folder, base_name = resolve_output_path(folder_input, name_input, info)
-    report_path = os.path.join(folder, "%s.xlsx" % base_name)
+    report_path = unique_path(os.path.join(folder, "%s.xlsx" % base_name))
 
     element_ids, method = detect_unused(document)
     with_worksharing = info["is_workshared"] and len(element_ids) <= WORKSHARING_INFO_LIMIT
@@ -1037,7 +1048,7 @@ def main():
     try:
         written.append(write_workbook(report_path, sheets))
     except Exception as error:
-        report_path = os.path.join(folder, "%s.csv" % base_name)
+        report_path = unique_path(os.path.join(folder, "%s.csv" % base_name))
         written.append(write_csv(report_path, DETAIL_HEADERS, rows))
         method += " | Excel write failed (%s) - CSV written instead" % _as_text(error).split("\n")[0][:160]
 
@@ -1068,7 +1079,7 @@ def main():
         passes,
         failed,
     )
-    log_path = os.path.join(folder, "%s_PurgeLog.xlsx" % base_name)
+    log_path = unique_path(os.path.join(folder, "%s_PurgeLog.xlsx" % base_name))
     log_sheets = [
         (
             "Summary",
@@ -1094,7 +1105,7 @@ def main():
     try:
         written.append(write_workbook(log_path, log_sheets))
     except Exception as error:
-        log_path = os.path.join(folder, "%s_PurgeLog.csv" % base_name)
+        log_path = unique_path(os.path.join(folder, "%s_PurgeLog.csv" % base_name))
         written.append(write_csv(log_path, PURGE_LOG_HEADERS, log_rows))
         result.append("Excel log write failed (%s) - CSV written instead" % _as_text(error).split("\n")[0][:160])
 

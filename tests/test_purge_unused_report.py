@@ -397,6 +397,15 @@ class OutputPathTests(unittest.TestCase):
         run_script(sample_document(), [folder, "Report.xlsx", False, "", False, 5])
         self.assertEqual(["Report.xlsx"], os.listdir(folder))
 
+    def test_an_existing_report_is_never_overwritten(self):
+        folder = tempfile.mkdtemp(prefix="purge-clobber-")
+        for expected in ("Report.xlsx", "Report_2.xlsx", "Report_3.xlsx"):
+            out, _ = run_script(sample_document(), [folder, "Report", False, "", False, 5])
+            self.assertEqual(os.path.join(folder, expected), out[4][len("Report: "):])
+        self.assertEqual(
+            ["Report.xlsx", "Report_2.xlsx", "Report_3.xlsx"], sorted(os.listdir(folder))
+        )
+
     def test_missing_document_reports_an_error(self):
         out, _ = run_script(None, ["", "", False, "", False, 5])
         self.assertEqual(1, len(out))
