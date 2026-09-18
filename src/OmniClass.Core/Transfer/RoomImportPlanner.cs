@@ -47,9 +47,9 @@ namespace OmniClass.Core.Transfer
     }
 
     /// <summary>
-    /// Matches exported rows to rooms in the model by Name only (exact, then
-    /// normalized so "W Room" and "W_Room" are the same). Room Number / Mark is
-    /// never used: it is unique per room and names are reused across rooms.
+    /// Matches exported rows to rooms in the model by Name only (normalized so
+    /// "W Room" and "W_Room" are the same). Room Number / Mark is never used: it
+    /// is unique per room and names are reused across rooms.
     /// Classification is only planned when the project already has the COBie /
     /// Classification.Space parameters (COBie is "activated").
     /// </summary>
