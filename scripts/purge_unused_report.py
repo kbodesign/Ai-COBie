@@ -605,15 +605,36 @@ def group_counts(infos):
 # ---------------------------------------------------------------------------
 # detection of unused elements
 # ---------------------------------------------------------------------------
+def _all_category_ids(document):
+    """Every category id in the document, for APIs that take a filter set."""
+    ids = _element_id_set()
+    if ids is None:
+        return None
+    count = 0
+    for category in _safe(lambda: document.Settings.Categories, []) or []:
+        category_id = _safe(lambda: category.Id, None)
+        if category_id is None:
+            continue
+        try:
+            ids.Add(category_id)
+            count += 1
+        except Exception:
+            continue
+    return ids if count else None
+
+
 def detect_unused(document):
     """Return (element_ids, method_label).
 
     Revit 2024+ exposes the engine behind "Purge Unused" through
     Document.GetAllUnusedElements / GetUnusedElements. Method names are probed
     at run time so a rename in a future release degrades to the heuristic scan
-    instead of failing the graph.
+    instead of failing the graph. Both take a filter set; an empty set means
+    "consider everything", but a release that instead reads it as "consider
+    nothing" would silently report no unused elements, so an explicit
+    all-categories set is tried before believing an empty answer.
     """
-    empty = _element_id_set()
+    succeeded_with = None
     for method_name, label in (
         ("GetAllUnusedElements", "Revit API - Document.GetAllUnusedElements (matches Purge Unused)"),
         ("GetUnusedElements", "Revit API - Document.GetUnusedElements"),
@@ -621,7 +642,12 @@ def detect_unused(document):
         method = getattr(document, method_name, None)
         if method is None:
             continue
-        for arguments in ((empty,), ()):
+        for build_arguments in (
+            lambda: (_element_id_set(),),
+            lambda: (_all_category_ids(document),),
+            lambda: (),
+        ):
+            arguments = build_arguments()
             if arguments and arguments[0] is None:
                 continue
             try:
@@ -631,9 +657,14 @@ def detect_unused(document):
             if result is None:
                 continue
             try:
-                return [element_id for element_id in result], label
+                element_ids = [element_id for element_id in result]
             except Exception:
                 continue
+            if element_ids:
+                return element_ids, label
+            succeeded_with = succeeded_with or label
+    if succeeded_with:
+        return [], succeeded_with
     return heuristic_unused(document), "Fallback heuristic scan (purge API unavailable in this release)"
 
 
@@ -945,7 +976,8 @@ def resolve_output_path(folder, file_name, info):
     if not _as_text(folder).strip():
         model_folder = os.path.dirname(info["path"]) if os.path.isdir(os.path.dirname(info["path"] or "")) else ""
         folder = model_folder or os.path.join(os.path.expanduser("~"), "Documents")
-    folder = os.path.expandvars(os.path.expanduser(_as_text(folder).strip()))
+    # Pasted Windows paths often arrive wrapped in quotes.
+    folder = os.path.expandvars(os.path.expanduser(_as_text(folder).strip().strip('"')))
 
     base = _as_text(file_name).strip()
     if not base:

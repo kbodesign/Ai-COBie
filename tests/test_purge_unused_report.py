@@ -164,6 +164,28 @@ class ReportOnlyTests(unittest.TestCase):
         self.assertTrue(any("Nothing to purge" in line for line in out), out)
         self.assertEqual(1, load_workbook_rows(os.path.join(self.folder, "Empty.xlsx"), "Unused Elements").__len__())
 
+    def test_empty_filter_answer_is_retried_with_all_categories(self):
+        # Guards against a release that reads an empty filter set as
+        # "consider nothing" and would otherwise report a clean model.
+        document = sample_document(purge_api_needs_categories=True)
+        out = self.run_report(document=document)
+        summary = summary_lookup(os.path.join(self.folder, "UnusedReport.xlsx"))
+
+        self.assertEqual(8, summary["Unused elements found"])
+        self.assertIn("GetAllUnusedElements", summary["Detection method"])
+        self.assertEqual([0, 3], document.purge_api_calls[:2])
+        self.assertTrue(any("Unused elements found: 8" in line for line in out), out)
+
+    def test_genuinely_clean_model_is_not_second_guessed(self):
+        document = sample_document()
+        document._unused = []
+        self.run_report(document=document)
+        summary = summary_lookup(os.path.join(self.folder, "UnusedReport.xlsx"))
+
+        self.assertEqual(0, summary["Unused elements found"])
+        self.assertIn("GetAllUnusedElements", summary["Detection method"])
+        self.assertNotIn("heuristic", summary["Detection method"].lower())
+
     def test_heuristic_fallback_when_purge_api_is_missing(self):
         document = sample_document(supports_purge_api=False)
         out = self.run_report(document=document)

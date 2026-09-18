@@ -99,7 +99,10 @@ headers and says so in the results.
 
 The script calls the same engine Revit's own **Purge Unused** command uses:
 `Document.GetAllUnusedElements`, falling back to `Document.GetUnusedElements`. Both are probed
-by name at run time, so a signature change in a future release cannot break the graph. If
+by name at run time, so a signature change in a future release cannot break the graph. Both take
+a filter set where an empty set means "consider everything"; if a release ever read that as
+"consider nothing" the result would be a silent all-clear, so an empty answer is retried with an
+explicit all-categories set before it is believed. If
 neither is available, the script runs a heuristic scan - it walks everything referenced by
 placed instances and by the types those instances use, then reports the remaining types,
 materials, patterns, appearance assets, filters, group types and families. The method that was

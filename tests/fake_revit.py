@@ -207,7 +207,8 @@ class FakeDocument(object):
 
     def __init__(self, title="Sample Model", path="", elements=None, unused=None,
                  supports_purge_api=True, workshared=False, dependents=None,
-                 undeletable=None):
+                 undeletable=None, purge_api_needs_categories=False,
+                 categories=("Walls", "Doors", "Materials")):
         self.Title = title
         self.PathName = path
         self.IsFamilyDocument = False
@@ -219,6 +220,14 @@ class FakeDocument(object):
         self._undeletable = set(undeletable or [])
         self.deleted_ids = []
         self.supports_purge_api = supports_purge_api
+        self.purge_api_needs_categories = purge_api_needs_categories
+        self.purge_api_calls = []
+        self.Settings = types.SimpleNamespace(
+            Categories=[
+                types.SimpleNamespace(Name=name, Id=ElementId(-2000000 - index))
+                for index, name in enumerate(categories)
+            ]
+        )
         for element in elements or []:
             self._elements[element.Id.Value] = element
         for element_id in unused or []:
@@ -235,6 +244,9 @@ class FakeDocument(object):
     def GetAllUnusedElements(self, ids):
         if not self.supports_purge_api:
             raise AttributeError("GetAllUnusedElements")
+        self.purge_api_calls.append(len(list(ids)))
+        if self.purge_api_needs_categories and not len(list(ids)):
+            return []
         return [ElementId(value) for value in self._unused if value in self._elements]
 
     def GetUnusedElements(self, ids):
