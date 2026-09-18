@@ -1,0 +1,30 @@
+# How to install (no Visual Studio, no Terminal)
+
+1. Download the zip for your Revit year:
+   - Revit 2023 or 2024  ->  OmniClassRooms-Revit2023-2024.zip
+   - Revit 2025 or 2026  ->  OmniClassRooms-Revit2025-2026.zip
+
+2. Unzip it. You will see two things:
+   OmniClass.Rooms.addin
+   OmniClassRooms          (a folder)
+
+3. Open File Explorer and paste this into the address bar, then press Enter:
+   %AppData%\Autodesk\Revit\Addins
+
+4. Open the folder for your Revit year (2023, 2024, 2025, or 2026).
+   If that year folder does not exist, create it.
+
+5. Copy BOTH items from the unzipped folder into that year folder.
+   When you are done it should look like this (2024 shown):
+
+   Addins\2024\OmniClass.Rooms.addin
+   Addins\2024\OmniClassRooms\OmniClass.Revit.dll
+   Addins\2024\OmniClassRooms\OmniClass.Core.dll
+   Addins\2024\OmniClassRooms\OmniClass.Rooms.config
+   Addins\2024\OmniClassRooms\data\room_aliases.csv
+
+6. Close Revit completely. Open Revit. Open a project (not a family).
+   Look on the ribbon for:  Arch Tools  ->  Room Data
+   You should see Classify Rooms, Export Rooms, Import Rooms, and Key Schedule.
+
+Do not copy RevitAPI.dll. It is not in this zip, and Revit already has it.

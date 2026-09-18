@@ -1,0 +1,58 @@
+<Window x:Class="OmniClass.Revit.Ui.PreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Classify rooms — OmniClass Table 13"
+        Height="640" Width="1180"
+        MinHeight="420" MinWidth="860"
+        WindowStartupLocation="CenterOwner"
+        Background="#F5F6F8">
+  <DockPanel Margin="16">
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+        <TextBlock Text="Show" VerticalAlignment="Center" Margin="0,0,8,0"/>
+        <ComboBox x:Name="FilterBox" Width="160" SelectionChanged="FilterBox_OnSelectionChanged">
+          <ComboBoxItem Content="All rooms" IsSelected="True"/>
+          <ComboBoxItem Content="Ready to apply"/>
+          <ComboBoxItem Content="Needs review"/>
+          <ComboBoxItem Content="Unmatched"/>
+          <ComboBoxItem Content="Skipped"/>
+        </ComboBox>
+      </StackPanel>
+      <TextBlock x:Name="SummaryText" TextWrapping="Wrap" FontSize="13"/>
+    </DockPanel>
+
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+      <Button Content="Check exact matches" Padding="12,6" Margin="0,0,8,0" Click="CheckExact_OnClick"/>
+      <Button Content="Uncheck all" Padding="12,6" Margin="0,0,8,0" Click="UncheckAll_OnClick"/>
+      <Button Content="Cancel" Padding="16,6" Margin="0,0,8,0" IsCancel="True" Click="Cancel_OnClick"/>
+      <Button x:Name="ApplyButton" Content="Apply checked" Padding="16,6" IsDefault="True" Click="Apply_OnClick"/>
+    </StackPanel>
+
+    <DataGrid x:Name="Grid"
+              AutoGenerateColumns="False"
+              CanUserAddRows="False"
+              CanUserDeleteRows="False"
+              IsReadOnly="False"
+              HeadersVisibility="Column"
+              GridLinesVisibility="Horizontal"
+              RowHeaderWidth="0"
+              SelectionMode="Extended"
+              EnableRowVirtualization="True"
+              FrozenColumnCount="1">
+      <DataGrid.Columns>
+        <DataGridCheckBoxColumn Header="Apply" Binding="{Binding Apply, UpdateSourceTrigger=PropertyChanged}"
+                                IsReadOnly="False" Width="56"/>
+        <DataGridTextColumn Header="Number" Binding="{Binding RoomNumber}" IsReadOnly="True" Width="80"/>
+        <DataGridTextColumn Header="Name" Binding="{Binding RoomName}" IsReadOnly="True" Width="160"/>
+        <DataGridTextColumn Header="Level" Binding="{Binding LevelName}" IsReadOnly="True" Width="100"/>
+        <DataGridTextColumn Header="Status" Binding="{Binding Status}" IsReadOnly="True" Width="90"/>
+        <DataGridTextColumn Header="Classification Number" Binding="{Binding ProposedNumber}" IsReadOnly="True" Width="140"/>
+        <DataGridTextColumn Header="Classification Name" Binding="{Binding ProposedTitle}" IsReadOnly="True" Width="150"/>
+        <DataGridTextColumn Header="Matched as" Binding="{Binding MatchedAlias}" IsReadOnly="True" Width="120"/>
+        <DataGridTextColumn Header="Score" Binding="{Binding Score}" IsReadOnly="True" Width="60"/>
+        <DataGridTextColumn Header="Current Number" Binding="{Binding CurrentNumber}" IsReadOnly="True" Width="120"/>
+        <DataGridTextColumn Header="Note" Binding="{Binding Reason}" IsReadOnly="True" Width="*"/>
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</Window>

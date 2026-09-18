@@ -1,0 +1,101 @@
+using Autodesk.Revit.UI;
+using OmniClass.Core.Configuration;
+using OmniClass.Revit.Commands;
+using OmniClass.Revit.Ribbon;
+
+namespace OmniClass.Revit
+{
+    /// <summary>
+    /// Registers the Arch Tools / Room Data panel. Commands themselves are invoked from
+    /// the push buttons, so they do not need their own .addin entries.
+    /// </summary>
+    public sealed class App : IExternalApplication
+    {
+        public Result OnStartup(UIControlledApplication application)
+        {
+            var panel = ArchToolsRibbon.GetOrCreatePanel(application);
+            var assembly = GetType().Assembly.Location;
+            var availability = typeof(ProjectDocumentAvailability).FullName;
+
+            var classify = new PushButtonData(
+                "OmniClassClassifyRooms",
+                RibbonPlacement.ClassifyButton,
+                assembly,
+                typeof(ClassifyRoomsCommand).FullName)
+            {
+                ToolTip = "Match room names to OmniClass Table 13 and assign the same values as " +
+                          "Interoperability → Assign Classification: Classification.Space.Number, " +
+                          "Classification.Space.Description, COBie.Space.Category, and ClassificationCode.",
+                LongDescription = "Reads the alias dictionary next to this add-in, classifies " +
+                                  "every placed room in the model, and shows a preview. Only " +
+                                  "checked rows are written. Unplaced rooms, rooms owned by " +
+                                  "another user, and rooms that already have a value are left alone " +
+                                  "unless overwrite is turned on in OmniClass.Rooms.config.",
+                AvailabilityClassName = availability,
+                LargeImage = RibbonIcons.Load("classify32.png"),
+                Image = RibbonIcons.Load("classify16.png")
+            };
+
+            var export = new PushButtonData(
+                "OmniClassExportRooms",
+                RibbonPlacement.ExportButton,
+                assembly,
+                typeof(ExportRoomsCommand).FullName)
+            {
+                ToolTip = "Export unique Name, OmniClass Number, and OmniClass Name. " +
+                          "Room Number is not exported. Saving to an existing CSV appends only new names.",
+                LongDescription = "Writes one row per distinct room name. Room Number / Mark is omitted " +
+                                  "because it is unique per room and names are reused. OmniClass columns " +
+                                  "come from Classification.Space.* when already filled, otherwise from a " +
+                                  "dictionary match. Save the same master file from several projects " +
+                                  "to append unique names only. Then use Import Rooms to apply them.",
+                AvailabilityClassName = availability,
+                LargeImage = RibbonIcons.Load("export32.png"),
+                Image = RibbonIcons.Load("export16.png")
+            };
+
+            var import = new PushButtonData(
+                "OmniClassImportRooms",
+                RibbonPlacement.ImportButton,
+                assembly,
+                typeof(ImportRoomsCommand).FullName)
+            {
+                ToolTip = "Import a room CSV to reuse names and, when COBie is on the project, " +
+                          "write OmniClass classifications.",
+                LongDescription = "Matches by room Name only (never by Room Number / Mark). Every " +
+                                  "room with that name is updated. Checked rows can unify spelling. " +
+                                  "If Classification.Space.* or COBie.Space.Category is on the room, " +
+                                  "OmniClass Number and Name are written the same way as Assign Classification.",
+                AvailabilityClassName = availability,
+                LargeImage = RibbonIcons.Load("import32.png"),
+                Image = RibbonIcons.Load("import16.png")
+            };
+
+            var keySchedule = new PushButtonData(
+                "OmniClassImportKeySchedule",
+                RibbonPlacement.KeyScheduleButton,
+                assembly,
+                typeof(ImportKeyScheduleCommand).FullName)
+            {
+                ToolTip = "Import unique room names from a CSV into a Room key schedule. " +
+                          "Creates the schedule if the project does not have one.",
+                LongDescription = "Best run once in the Arch template, then save the template so " +
+                                  "new projects already have a Room Type dropdown. Each CSV name " +
+                                  "becomes a key. Picking it on a room sets Name and, when " +
+                                  "Classification.Space / COBie parameters exist, OmniClass. " +
+                                  "Existing keys are updated; names not in the CSV are left alone.",
+                AvailabilityClassName = availability,
+                LargeImage = RibbonIcons.Load("key32.png"),
+                Image = RibbonIcons.Load("key16.png")
+            };
+
+            panel.AddItem(classify);
+            panel.AddSeparator();
+            panel.AddStackedItems(export, import, keySchedule);
+
+            return Result.Succeeded;
+        }
+
+        public Result OnShutdown(UIControlledApplication application) => Result.Succeeded;
+    }
+}
