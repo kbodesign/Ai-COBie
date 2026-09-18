@@ -58,40 +58,89 @@ namespace OmniClass.Revit.Rooms
                     continue;
                 }
 
-                var number = FindParameter(room, settings.NumberParameterName);
-                var title = FindParameter(room, settings.TitleParameterName);
-                var category = FindParameter(room, settings.CategoryParameterName);
-                var currentNumber = TextOf(number);
-                var currentTitle = TextOf(title);
-                var currentCategory = TextOf(category);
-                var already = ApplyPolicy.HasExistingClassification(currentNumber, currentTitle)
-                              || !string.IsNullOrWhiteSpace(currentCategory);
-
-                if (already && !settings.OverwriteExisting)
-                {
-                    result.AlreadyPopulated++;
+                if (!TryWriteAssignments(room, found, settings, overwrite: settings.OverwriteExisting, result, row.RoomNumber, row.RoomName))
                     continue;
-                }
-
-                if (found.TrueForAll(pair => Same(TextOf(pair.Key), pair.Value)))
-                {
-                    result.Unchanged++;
-                    continue;
-                }
-
-                try
-                {
-                    foreach (var pair in found) TrySet(pair.Key, pair.Value);
-                    result.Written++;
-                }
-                catch (Exception ex)
-                {
-                    result.Skipped++;
-                    result.Failures.Add(row.RoomNumber + " " + row.RoomName + ": " + ex.Message);
-                }
             }
 
             return result;
+        }
+
+        public static bool HasCobieParameters(Element room, AddinSettings settings)
+        {
+            if (room == null || settings == null) return false;
+            return FindParameter(room, settings.NumberParameterName) != null
+                   || FindParameter(room, settings.TitleParameterName) != null
+                   || FindParameter(room, settings.CategoryParameterName) != null;
+        }
+
+        public static bool TrySetRoomName(Room room, string name)
+        {
+            if (room == null || string.IsNullOrWhiteSpace(name)) return false;
+
+            var parameter = room.get_Parameter(BuiltInParameter.ROOM_NAME);
+            if (parameter == null || parameter.IsReadOnly) return false;
+            if (Same(TextOf(parameter), name)) return false;
+            parameter.Set(name.Trim());
+            return true;
+        }
+
+        public static bool TryWriteClassification(Room room, AddinSettings settings, string number, string title)
+        {
+            if (room == null || settings == null) return false;
+
+            var assignments = Assignments(settings, number, title);
+            var found = new List<KeyValuePair<Parameter, string>>();
+            foreach (var assignment in assignments)
+            {
+                var parameter = FindParameter(room, assignment.Key);
+                if (parameter != null) found.Add(new KeyValuePair<Parameter, string>(parameter, assignment.Value));
+            }
+
+            if (found.Count == 0) return false;
+
+            var dummy = new WriteResult();
+            return TryWriteAssignments(room, found, settings, overwrite: true, dummy, room.Number, "");
+        }
+
+        private static bool TryWriteAssignments(
+            Room room,
+            List<KeyValuePair<Parameter, string>> found,
+            AddinSettings settings,
+            bool overwrite,
+            WriteResult result,
+            string roomNumber,
+            string roomName)
+        {
+            var number = FindParameter(room, settings.NumberParameterName);
+            var title = FindParameter(room, settings.TitleParameterName);
+            var category = FindParameter(room, settings.CategoryParameterName);
+            var already = ApplyPolicy.HasExistingClassification(TextOf(number), TextOf(title))
+                          || !string.IsNullOrWhiteSpace(TextOf(category));
+
+            if (already && !overwrite)
+            {
+                result.AlreadyPopulated++;
+                return false;
+            }
+
+            if (found.TrueForAll(pair => Same(TextOf(pair.Key), pair.Value)))
+            {
+                result.Unchanged++;
+                return false;
+            }
+
+            try
+            {
+                foreach (var pair in found) TrySet(pair.Key, pair.Value);
+                result.Written++;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                result.Skipped++;
+                result.Failures.Add((roomNumber ?? string.Empty) + " " + (roomName ?? string.Empty) + ": " + ex.Message);
+                return false;
+            }
         }
 
         private static IReadOnlyList<KeyValuePair<string, string>> Assignments(AddinSettings settings, string number, string title)

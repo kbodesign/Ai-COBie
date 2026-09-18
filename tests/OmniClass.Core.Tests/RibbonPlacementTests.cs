@@ -10,6 +10,9 @@ namespace OmniClass.Core.Tests
         {
             Assert.Equal("Arch Tools", RibbonPlacement.Tab);
             Assert.Equal("Room Data", RibbonPlacement.Panel);
+            Assert.Equal("Classify\nRooms", RibbonPlacement.ClassifyButton);
+            Assert.Equal("Export\nRooms", RibbonPlacement.ExportButton);
+            Assert.Equal("Import\nRooms", RibbonPlacement.ImportButton);
         }
     }
 }

@@ -8,5 +8,8 @@ namespace OmniClass.Core.Configuration
     {
         public const string Tab = "Arch Tools";
         public const string Panel = "Room Data";
+        public const string ClassifyButton = "Classify\nRooms";
+        public const string ExportButton = "Export\nRooms";
+        public const string ImportButton = "Import\nRooms";
     }
 }

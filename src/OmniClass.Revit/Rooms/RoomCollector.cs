@@ -61,7 +61,8 @@ namespace OmniClass.Revit.Rooms
                 OwnerName = owner,
                 CurrentNumber = ParameterText(room, settings.NumberParameterName),
                 CurrentTitle = ParameterText(room, settings.TitleParameterName),
-                CurrentCategory = ParameterText(room, settings.CategoryParameterName)
+                CurrentCategory = ParameterText(room, settings.CategoryParameterName),
+                HasCobieParameters = ClassificationWriter.HasCobieParameters(room, settings)
             };
         }
 

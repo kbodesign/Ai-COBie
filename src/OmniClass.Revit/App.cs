@@ -1,4 +1,5 @@
 using Autodesk.Revit.UI;
+using OmniClass.Core.Configuration;
 using OmniClass.Revit.Commands;
 using OmniClass.Revit.Ribbon;
 
@@ -18,7 +19,7 @@ namespace OmniClass.Revit
 
             var classify = new PushButtonData(
                 "OmniClassClassifyRooms",
-                "Classify\nRooms",
+                RibbonPlacement.ClassifyButton,
                 assembly,
                 typeof(ClassifyRoomsCommand).FullName)
             {
@@ -35,24 +36,42 @@ namespace OmniClass.Revit
                 Image = RibbonIcons.Load("classify16.png")
             };
 
-            var harvest = new PushButtonData(
-                "OmniClassHarvestNames",
-                "Harvest\nNames",
+            var export = new PushButtonData(
+                "OmniClassExportRooms",
+                RibbonPlacement.ExportButton,
                 assembly,
-                typeof(HarvestNamesCommand).FullName)
+                typeof(ExportRoomsCommand).FullName)
             {
-                ToolTip = "Export the distinct room names in this model, ranked by how often they occur.",
-                LongDescription = "Builds the evidence base for the alias dictionary. The CSV is " +
-                                  "the list to curate: add the frequent unmatched names to the " +
-                                  "sheet and the next Classify run will pick them up.",
+                ToolTip = "Export Room Number, Name, OmniClass Number, and OmniClass Name to a CSV file.",
+                LongDescription = "Writes one row per room. OmniClass columns come from " +
+                                  "Classification.Space.* when already filled, otherwise from a " +
+                                  "dictionary match. Edit the names in Excel for consistency, then " +
+                                  "use Import Rooms to apply them.",
                 AvailabilityClassName = availability,
-                LargeImage = RibbonIcons.Load("harvest32.png"),
-                Image = RibbonIcons.Load("harvest16.png")
+                LargeImage = RibbonIcons.Load("export32.png"),
+                Image = RibbonIcons.Load("export16.png")
+            };
+
+            var import = new PushButtonData(
+                "OmniClassImportRooms",
+                RibbonPlacement.ImportButton,
+                assembly,
+                typeof(ImportRoomsCommand).FullName)
+            {
+                ToolTip = "Import a room CSV to reuse names and, when COBie is on the project, " +
+                          "write OmniClass classifications.",
+                LongDescription = "Matches by Room Number, then by Name. Checked rows update the " +
+                                  "room name for consistency. If Classification.Space.* or " +
+                                  "COBie.Space.Category is on the room, OmniClass Number and Name " +
+                                  "are written the same way as Assign Classification.",
+                AvailabilityClassName = availability,
+                LargeImage = RibbonIcons.Load("import32.png"),
+                Image = RibbonIcons.Load("import16.png")
             };
 
             panel.AddItem(classify);
             panel.AddSeparator();
-            panel.AddItem(harvest);
+            panel.AddStackedItems(export, import);
 
             return Result.Succeeded;
         }

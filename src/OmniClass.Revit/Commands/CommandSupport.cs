@@ -39,8 +39,8 @@ namespace OmniClass.Revit.Commands
                     .Select(m => m.ToString());
 
                 Warn("Dictionary has errors",
-                    "Fix these before classifying. Harvest Names still works and will list " +
-                    "what the sheet currently does with each room.\n\n" + string.Join("\n", errors));
+                    "Fix these before classifying. Export Rooms still writes the current names " +
+                    "and any OmniClass values already on the rooms.\n\n" + string.Join("\n", errors));
                 return null;
             }
 

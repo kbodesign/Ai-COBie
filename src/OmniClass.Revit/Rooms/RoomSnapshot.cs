@@ -18,6 +18,7 @@ namespace OmniClass.Revit.Rooms
         public string CurrentNumber { get; set; } = string.Empty;
         public string CurrentTitle { get; set; } = string.Empty;
         public string CurrentCategory { get; set; } = string.Empty;
+        public bool HasCobieParameters { get; set; }
 
         public bool IsWritable => !IsUnplaced && !IsNotEnclosed && !OwnedByOtherUser;
 

@@ -37,8 +37,10 @@
     <None Include="..\..\install\OmniClass.Rooms.addin" Link="OmniClass.Rooms.addin" CopyToOutputDirectory="PreserveNewest" />
     <EmbeddedResource Include="Resources\classify16.png" />
     <EmbeddedResource Include="Resources\classify32.png" />
-    <EmbeddedResource Include="Resources\harvest16.png" />
-    <EmbeddedResource Include="Resources\harvest32.png" />
+    <EmbeddedResource Include="Resources\export16.png" />
+    <EmbeddedResource Include="Resources\export32.png" />
+    <EmbeddedResource Include="Resources\import16.png" />
+    <EmbeddedResource Include="Resources\import32.png" />
   </ItemGroup>
 
   <Target Name="RemoveRevitApiFromOutput" AfterTargets="Build">

@@ -6,8 +6,8 @@ room name people actually typed to a curated list of aliases, so `Restroom`, `Re
 from a list of thousands.
 
 **Current state:** the matching engine and a Revit add-in are both in the repo. The add-in
-lands on the **Arch Tools** ribbon, in a panel named **Room Data**, with Classify Rooms and
-Harvest Names. See [Install the add-in](#install-the-add-in).
+lands on the **Arch Tools** ribbon, in a panel named **Room Data**, with Classify Rooms,
+Export Rooms, and Import Rooms. See [Install the add-in](#install-the-add-in).
 
 ## Why the spreadsheet layout changed
 
@@ -81,13 +81,11 @@ exports where nobody checks it again. So the guardrails matter more than the hit
 
 The dictionary is the product, and it is grown from evidence rather than imagination:
 
-1. **Harvest.** Export room schedules from finished models and run `audit`. You get every
-   distinct room name ranked by how often it really occurs.
-2. **Curate.** Add the frequent unmatched names to the sheet. The top hundred rows will cover
-   most rooms on most jobs.
-3. **Classify.** Apply exact hits, review the rest.
-4. **Repeat.** Every project's unmatched list makes the next project better. That feedback
-   loop is the whole point.
+1. **Export Rooms** from a finished model (Room Number, Name, OmniClass Number, OmniClass Name).
+2. **Curate** names in Excel so every project uses the same room names.
+3. **Import Rooms** to reuse those names. If Classification.Space / COBie parameters are on
+   the rooms, OmniClass Number and Name are written too.
+4. **Classify** remaining rooms that still need a dictionary match.
 
 ## Try it without Revit
 
@@ -133,9 +131,9 @@ Number,Name,Room Name 1,Room Name 2,Room Name 3,Room Name 4,Room Name 5,Room Nam
 ```
 
 A room named `Electrical Room` or `Women's Restroom` matches from column B with no extra
-alias. C+ is only for names people actually type (`WRR`, `W Room`, `Ladies`). Harvest Names
-writes this same layout, so you can paste new spellings into the next empty column. An older
-sheet that still has a level digit in column C is still accepted.
+alias. C+ is only for names people actually type (`WRR`, `W Room`, `Ladies`). Export Rooms
+writes Room Number, Name, OmniClass Number, and OmniClass Name so the list can be edited
+and imported. An older sheet that still has a level digit in column C is still accepted.
 
 Two things to watch:
 
@@ -199,8 +197,11 @@ The classify preview pre-selects only exact dictionary hits. Probable and ambigu
 are listed for review. Unplaced rooms, not-enclosed rooms, rooms owned by another user, and
 rooms that already have a value are left alone unless `overwriteExisting = true`. A second
 run does not overwrite populated values and does not try to recreate shared parameters
-(that is what caused the GUID error). Harvest appends only unique names when the CSV
-already exists. The whole write is one undo.
+(that is what caused the GUID error). Export Rooms writes one CSV row per room (Room Number,
+Name, OmniClass Number, OmniClass Name). Import Rooms matches by Room Number then Name,
+lets you check which rows to apply, updates names for consistency, and writes OmniClass
+into Classification.Space.* / COBie.Space.Category when those parameters are on the room.
+The whole write is one undo.
 
 Dictionary version stamping is not in yet: a later pass should record which dictionary
 classified the model so a correction can find the rooms it touched.

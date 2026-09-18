@@ -5,16 +5,15 @@ using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Microsoft.Win32;
-using OmniClass.Core.Audit;
-using OmniClass.Core.Loading;
 using OmniClass.Core.Matching;
+using OmniClass.Core.Transfer;
 using OmniClass.Revit.Rooms;
 
 namespace OmniClass.Revit.Commands
 {
     [Transaction(TransactionMode.ReadOnly)]
     [Regeneration(RegenerationOption.Manual)]
-    public sealed class HarvestNamesCommand : IExternalCommand
+    public sealed class ExportRoomsCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
@@ -31,7 +30,7 @@ namespace OmniClass.Revit.Commands
             }
             catch (Exception ex)
             {
-                CommandSupport.Warn("Harvest names failed", ex.Message);
+                CommandSupport.Warn("Export rooms failed", ex.Message);
                 message = ex.Message;
                 return Result.Failed;
             }
@@ -41,63 +40,69 @@ namespace OmniClass.Revit.Commands
         {
             var settings = CommandSupport.SettingsOrWarn();
             var rooms = RoomCollector.Collect(document, settings);
-            var names = rooms
-                .Where(r => !r.IsUnplaced)
-                .Select(r => r.Name)
-                .ToList();
-
-            if (names.Count == 0)
+            if (rooms.Count == 0)
             {
-                CommandSupport.Inform("No rooms", "This project has no placed rooms to harvest.");
+                CommandSupport.Inform("No rooms", "This project has no room elements to export.");
                 return Result.Cancelled;
             }
 
-            var tallies = RoomNameAudit.Tally(names);
             var dictionary = CommandSupport.TryLoadDictionary(settings, warnIfMissing: false, requireClean: false);
             var classifier = dictionary == null ? null : new RoomClassifier(dictionary);
-            var incoming = AliasSheet.FromTallies(tallies, classifier);
+
+            var rows = rooms.Select(room => ToTransfer(room, classifier)).ToList();
 
             var dialog = new SaveFileDialog
             {
-                Title = "Save or merge room names",
+                Title = "Export rooms",
                 Filter = "CSV (*.csv)|*.csv",
                 FileName = SuggestedFileName(document),
-                OverwritePrompt = false
+                OverwritePrompt = true
             };
 
             if (dialog.ShowDialog() != true) return Result.Cancelled;
 
-            int added;
-            int already;
-            if (File.Exists(dialog.FileName))
-            {
-                var existing = AliasSheet.FromFile(dialog.FileName, classifier: classifier);
-                added = existing.MergeUnique(incoming);
-                already = incoming.Rows.Sum(r => r.Aliases.Count) - added;
-                if (already < 0) already = 0;
-                existing.WriteFile(dialog.FileName);
-            }
-            else
-            {
-                incoming.WriteFile(dialog.FileName);
-                added = incoming.Rows.Sum(r => r.Aliases.Count);
-                already = 0;
-            }
+            RoomTransferSheet.WriteFile(dialog.FileName, rows);
 
+            var classified = rows.Count(r => r.HasOmniClass);
             CommandSupport.Inform(
-                "Harvest saved",
-                names.Count + " rooms harvested.\n" +
-                added + " unique name" + (added == 1 ? "" : "s") + " written" +
-                (already == 0 ? "." : "; " + already + " already on the sheet and were not repeated.") +
-                "\n\nSaved to:\n" + dialog.FileName);
+                "Rooms exported",
+                rooms.Count + " room" + (rooms.Count == 1 ? "" : "s") + " written.\n" +
+                classified + " with an OmniClass number and name.\n\n" +
+                "Columns: Room Number, Name, OmniClass Number, OmniClass Name.\n" +
+                "Edit names for consistency, then use Import Rooms to apply them.\n\n" +
+                "Saved to:\n" + dialog.FileName);
 
             return Result.Succeeded;
+        }
+
+        private static RoomTransferRow ToTransfer(RoomSnapshot room, RoomClassifier classifier)
+        {
+            var number = room.CurrentNumber ?? string.Empty;
+            var title = room.CurrentTitle ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(number) && classifier != null)
+            {
+                var result = classifier.Classify(room.Name);
+                if (result != null && result.Status != MatchStatus.Unmatched && !string.IsNullOrEmpty(result.Number))
+                {
+                    number = result.Number;
+                    title = result.Title;
+                }
+            }
+
+            return new RoomTransferRow
+            {
+                RoomNumber = room.Number ?? string.Empty,
+                Name = room.Name ?? string.Empty,
+                OmniClassNumber = number,
+                OmniClassName = title
+            };
         }
 
         private static string SuggestedFileName(Document document)
         {
             var title = string.IsNullOrEmpty(document.Title) ? "rooms" : Path.GetFileNameWithoutExtension(document.Title);
-            return title + " room names.csv";
+            return title + " rooms.csv";
         }
     }
 }
