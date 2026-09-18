@@ -4,6 +4,7 @@
 import os
 import sys
 import tempfile
+import zipfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -84,8 +85,23 @@ class ReportOnlyTests(unittest.TestCase):
         )
         self.assertEqual(9, detail.max_row)  # header + 8 unused elements
         self.assertEqual("A2", detail.freeze_panes)
-        self.assertTrue(detail.auto_filter.ref)
+        self.assertEqual("A1:K9", detail.auto_filter.ref)
         self.assertTrue(detail["A1"].font.b)
+        self.assertEqual("FFFFFFFF", detail["A1"].font.color.rgb)
+        self.assertEqual("FF1F4E79", detail["A1"].fill.fgColor.rgb)
+        self.assertGreater(detail.column_dimensions["E"].width, detail.column_dimensions["A"].width)
+
+    def test_filter_range_is_registered_so_dropdowns_are_drawn(self):
+        self.run_report()
+        with zipfile.ZipFile(os.path.join(self.folder, "UnusedReport.xlsx")) as package:
+            workbook = package.read("xl/workbook.xml").decode("utf-8")
+
+        self.assertIn(
+            "<definedName name=\"_xlnm._FilterDatabase\" localSheetId=\"1\" hidden=\"1\">"
+            "'Unused Elements'!$A$1:$K$9</definedName>",
+            workbook,
+        )
+        self.assertEqual(3, workbook.count("_xlnm._FilterDatabase"))
 
     def test_rows_carry_classification_and_escaped_text(self):
         self.run_report()

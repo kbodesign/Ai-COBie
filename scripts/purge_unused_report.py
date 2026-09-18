@@ -253,12 +253,16 @@ def _column_widths(headers, rows, minimum=9, maximum=60):
     return widths
 
 
-def _sheet_xml(headers, rows):
+def _sheet_extent(headers, rows):
+    """(last column letter, last row) of the used range, header row included."""
     column_count = max(1, len(headers))
     for row in rows:
         column_count = max(column_count, len(row))
-    last_column = _column_letter(column_count)
-    row_count = len(rows) + 1
+    return _column_letter(column_count), len(rows) + 1
+
+
+def _sheet_xml(headers, rows):
+    last_column, row_count = _sheet_extent(headers, rows)
 
     parts = [
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
@@ -368,11 +372,22 @@ def write_workbook(path, sheets, creator=SCRIPT_NAME):
         '<sheet name="%s" sheetId="%d" r:id="rId%d"/>' % (_xml_escape(name), index, index)
         for index, name in enumerate(names, start=1)
     )
+    # Excel and LibreOffice only draw the filter dropdowns when the filtered
+    # range is also registered as the sheet's _FilterDatabase name.
+    filter_names = []
+    for index, (name, sheet) in enumerate(zip(names, sheets)):
+        last_column, row_count = _sheet_extent(sheet[1], sheet[2])
+        filter_names.append(
+            '<definedName name="_xlnm._FilterDatabase" localSheetId="%d" hidden="1">'
+            "'%s'!$A$1:$%s$%d</definedName>"
+            % (index, _xml_escape(name.replace("'", "''")), last_column, row_count)
+        )
     workbook = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
         'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-        "<sheets>%s</sheets></workbook>" % workbook_sheets
+        "<sheets>%s</sheets><definedNames>%s</definedNames></workbook>"
+        % (workbook_sheets, "".join(filter_names))
     )
 
     workbook_rels = [
