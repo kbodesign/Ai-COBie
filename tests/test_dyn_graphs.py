@@ -127,11 +127,137 @@ class GraphWiringTests(unittest.TestCase):
         # folder, file name and the confirmation keyword all blank; only the pass count is set
         self.assertEqual(["", "", "", "5"], strings)
 
+    def test_player_input_metadata_matches_the_input_nodes(self):
+        by_id = {node["Id"]: node for node in self.graph["Nodes"]}
+        entries = self.graph["Inputs"]
+
+        self.assertEqual(EXPECTED_INPUT_LABELS, [entry["Name"] for entry in entries])
+        for entry in entries:
+            node = by_id[entry["Id"]]
+            expected = "boolean" if isinstance(node["InputValue"], bool) else "string"
+            self.assertEqual(expected, entry["Type"])
+            self.assertEqual(expected, entry["Type2"])
+            self.assertEqual(node["Description"], entry["Description"])
+        self.assertEqual("false", next(e for e in entries if "Confirm Purge" in e["Name"])["Value"])
+
+    def test_player_output_metadata_points_at_the_watch_node(self):
+        watch = node_of_type(self.graph, "ExtensionNode")
+        self.assertEqual([watch["Id"]], [entry["Id"] for entry in self.graph["Outputs"]])
+
+    def test_canvas_is_positioned_and_zoomed(self):
+        # A zero zoom would open the graph on an apparently blank canvas.
+        view = self.graph["View"]
+        self.assertGreater(view["Zoom"], 0.1)
+        self.assertIn("X", view)
+        self.assertIn("Y", view)
+
     def test_only_node_types_present_in_every_dynamo_3_release_are_used(self):
         # Sliders and other input nodes have changed concrete type between
         # releases; these four have not.
         allowed = {"StringInputNode", "BooleanInputNode", "PythonScriptNode", "ExtensionNode"}
         self.assertEqual(allowed, {node["NodeType"] for node in self.graph["Nodes"]})
+
+
+class SchemaFidelityTests(unittest.TestCase):
+    """Guards the JSON against drift from what Dynamo itself writes.
+
+    Reference values were taken from graphs authored by Dynamo:
+    DynamoDS/Dynamo doc/distrib/NodeHelpFiles/en-US/{Not,DSCore.String.Contains}.dyn
+    (Dynamo 2.19) and a Revit graph saved by Dynamo 2.17.
+    """
+
+    PORT_KEYS = {
+        "Id",
+        "Name",
+        "Description",
+        "UsingDefaultValue",
+        "Level",
+        "UseLevels",
+        "KeepListStructure",
+    }
+    NODE_KEYS = {"ConcreteType", "Id", "NodeType", "Inputs", "Outputs", "Replication", "Description"}
+    REFERENCE = {
+        "StringInputNode": (
+            "CoreNodeModels.Input.StringInput, CoreNodeModels",
+            {"InputValue"},
+            "String",
+        ),
+        "BooleanInputNode": (
+            "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+            {"InputValue"},
+            "Boolean",
+        ),
+        "PythonScriptNode": (
+            "PythonNodeModels.PythonNode, PythonNodeModels",
+            {"Code", "Engine", "EngineName", "VariableInputPorts"},
+            "Result of the python script",
+        ),
+        "ExtensionNode": (
+            "CoreNodeModels.Watch, CoreNodeModels",
+            {"WatchWidth", "WatchHeight"},
+            "Node output",
+        ),
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        cls.graph = load("2027")
+
+    def test_node_json_matches_what_dynamo_writes(self):
+        for node in self.graph["Nodes"]:
+            concrete_type, extra_keys, output_description = self.REFERENCE[node["NodeType"]]
+            self.assertEqual(concrete_type, node["ConcreteType"])
+            self.assertEqual(self.NODE_KEYS | extra_keys, set(node))
+            self.assertEqual(output_description, node["Outputs"][0]["Description"])
+            for port in node["Inputs"] + node["Outputs"]:
+                self.assertEqual(self.PORT_KEYS, set(port))
+                self.assertEqual(2, port["Level"])
+                self.assertFalse(port["UseLevels"])
+
+    def test_workspace_and_view_json_matches_what_dynamo_writes(self):
+        self.assertEqual(
+            {
+                "Uuid",
+                "IsCustomNode",
+                "Description",
+                "Name",
+                "ElementResolver",
+                "Inputs",
+                "Outputs",
+                "Nodes",
+                "Connectors",
+                "Dependencies",
+                "NodeLibraryDependencies",
+                "EnableLegacyPolyCurveBehavior",
+                "Thumbnail",
+                "GraphDocumentationURL",
+                "ExtensionWorkspaceData",
+                "Author",
+                "Linting",
+                "Bindings",
+                "View",
+            },
+            set(self.graph),
+        )
+        self.assertEqual(
+            {"Dynamo", "Camera", "ConnectorPins", "NodeViews", "Annotations", "X", "Y", "Zoom"},
+            set(self.graph["View"]),
+        )
+        self.assertEqual(
+            {"ScaleFactor", "HasRunWithoutCrash", "IsVisibleInDynamoLibrary", "Version", "RunType", "RunPeriod"},
+            set(self.graph["View"]["Dynamo"]),
+        )
+        for connector in self.graph["Connectors"]:
+            self.assertEqual({"Start", "End", "Id", "IsHidden"}, set(connector))
+            self.assertEqual("False", connector["IsHidden"])  # Dynamo writes this as a string
+
+    def test_identifiers_are_hyphenless_guids(self):
+        identifiers = [node["Id"] for node in self.graph["Nodes"]]
+        identifiers += [connector["Id"] for connector in self.graph["Connectors"]]
+        identifiers += [group["Id"] for group in self.graph["View"]["Annotations"]]
+        for identifier in identifiers:
+            self.assertRegex(identifier, r"^[0-9a-f]{32}$")
+        self.assertRegex(self.graph["Uuid"], r"^[0-9a-f-]{36}$")
 
 
 class EmbeddedScriptTests(unittest.TestCase):

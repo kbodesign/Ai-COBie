@@ -6,8 +6,71 @@
   "ElementResolver": {
     "ResolutionMap": {}
   },
-  "Inputs": [],
-  "Outputs": [],
+  "Inputs": [
+    {
+      "Id": "7b9fa50ebc2550a9a69ec299beba4a24",
+      "Name": "Export Folder (blank = model folder)",
+      "Type": "string",
+      "Type2": "string",
+      "Value": "",
+      "Description": "Folder for the Excel report. Leave blank to use the folder of the model (or Documents when the model is unsaved).",
+      "SelectedIndex": 0
+    },
+    {
+      "Id": "3c3220dc34dd59bca3fd809efc9fafd8",
+      "Name": "Report File Name (blank = auto)",
+      "Type": "string",
+      "Type2": "string",
+      "Value": "",
+      "Description": "Report file name without extension. Leave blank for PurgeUnused_<model>_<timestamp>.xlsx.",
+      "SelectedIndex": 0
+    },
+    {
+      "Id": "5e0cae3d0c825f88b3df17c03d426911",
+      "Name": "Confirm Purge (False = report only)",
+      "Type": "boolean",
+      "Type2": "boolean",
+      "Value": "false",
+      "Description": "False = report only. True = the team authorises deleting the unused elements.",
+      "SelectedIndex": 0
+    },
+    {
+      "Id": "461c3239fdc15655b3b9d1e2db561d19",
+      "Name": "Confirmation Keyword (type PURGE)",
+      "Type": "string",
+      "Type2": "string",
+      "Value": "",
+      "Description": "Second authorisation factor: type PURGE to allow deletion.",
+      "SelectedIndex": 0
+    },
+    {
+      "Id": "e7d097ca1baf56c9b184c4f0c8a4ca4f",
+      "Name": "Show Confirmation Dialog in Revit",
+      "Type": "boolean",
+      "Type2": "boolean",
+      "Value": "true",
+      "Description": "True = show a Yes/No confirmation dialog inside Revit before purging.",
+      "SelectedIndex": 0
+    },
+    {
+      "Id": "9813caf8688a5c00ac9716fbc5891d6f",
+      "Name": "Max Purge Passes (1-10)",
+      "Type": "string",
+      "Type2": "string",
+      "Value": "5",
+      "Description": "How many detect-and-delete passes to run (1-10); elements that only become unused after their users are gone are picked up by later passes.",
+      "SelectedIndex": 0
+    }
+  ],
+  "Outputs": [
+    {
+      "Id": "3bee067622bd5501ac581c851175031b",
+      "Name": "Results",
+      "Type": "unknown",
+      "InitialValue": "",
+      "Description": "What was found, where the report was written, and what was purged"
+    }
+  ],
   "Nodes": [
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
@@ -217,7 +280,7 @@
         {
           "Id": "2facbfefe9695c98ab49bb8bae99ed26",
           "Name": "",
-          "Description": "Node to evaluate",
+          "Description": "Node to show output from",
           "UsingDefaultValue": false,
           "Level": 2,
           "UseLevels": false,
@@ -228,7 +291,7 @@
         {
           "Id": "9c6b33890a3d5125a9bde48e20f2fd87",
           "Name": "",
-          "Description": "Watch contents",
+          "Description": "Node output",
           "UsingDefaultValue": false,
           "Level": 2,
           "UseLevels": false,
@@ -405,7 +468,7 @@
       {
         "Id": "650b02f7562d51eb9395420044d6122b",
         "Title": "1. Settings - review before running (Dynamo Player inputs)",
-        "DescriptionText": null,
+        "DescriptionText": "<Double click here to edit group description>",
         "IsExpanded": true,
         "WidthAdjustment": 0.0,
         "HeightAdjustment": 0.0,
@@ -432,7 +495,7 @@
       {
         "Id": "9523de59b12254aeac6006193ed992e8",
         "Title": "2. Report to Excel, then purge only once confirmed",
-        "DescriptionText": null,
+        "DescriptionText": "<Double click here to edit group description>",
         "IsExpanded": true,
         "WidthAdjustment": 0.0,
         "HeightAdjustment": 0.0,
@@ -454,7 +517,7 @@
       {
         "Id": "8b82d82cfb835adc9778682e979cfec4",
         "Title": "3. Results",
-        "DescriptionText": null,
+        "DescriptionText": "<Double click here to edit group description>",
         "IsExpanded": true,
         "WidthAdjustment": 0.0,
         "HeightAdjustment": 0.0,
@@ -473,6 +536,9 @@
         "TextblockHeight": 46.0,
         "Background": "#FFB5B5B5"
       }
-    ]
+    ],
+    "X": 60.0,
+    "Y": 40.0,
+    "Zoom": 0.75
   }
 }

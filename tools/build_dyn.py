@@ -110,8 +110,8 @@ def watch_node(key):
         "WatchHeight": 260.0,
         "Id": guid(key, "node"),
         "NodeType": "ExtensionNode",
-        "Inputs": [port(key, "in", 0, "", "Node to evaluate")],
-        "Outputs": [port(key, "out", 0, "", "Watch contents")],
+        "Inputs": [port(key, "in", 0, "", "Node to show output from")],
+        "Outputs": [port(key, "out", 0, "", "Node output")],
         "Replication": "Disabled",
         "Description": "Visualizes a node's output",
     }
@@ -136,11 +136,39 @@ def node_view(node, name, x, y, is_input=False, is_output=False):
     }
 
 
+def player_input(node, name, description):
+    """Workspace-level input entry - this is what Dynamo Player reads."""
+    value = node["InputValue"]
+    if isinstance(value, bool):
+        kind, text = "boolean", "true" if value else "false"
+    else:
+        kind, text = "string", value
+    return {
+        "Id": node["Id"],
+        "Name": name,
+        "Type": kind,
+        "Type2": kind,
+        "Value": text,
+        "Description": description,
+        "SelectedIndex": 0,
+    }
+
+
+def player_output(node, name, description):
+    return {
+        "Id": node["Id"],
+        "Name": name,
+        "Type": "unknown",
+        "InitialValue": "",
+        "Description": description,
+    }
+
+
 def annotation(key, title, nodes, left, top, width, height, background):
     return {
         "Id": guid("annotation", key),
         "Title": title,
-        "DescriptionText": None,
+        "DescriptionText": "<Double click here to edit group description>",
         "IsExpanded": True,
         "WidthAdjustment": 0.0,
         "HeightAdjustment": 0.0,
@@ -278,8 +306,10 @@ def build_graph(revit_year, revit_label, script_source):
         "Description": GRAPH_DESCRIPTION,
         "Name": "PurgeUnusedElements_ReportAndConfirm_Revit%s" % revit_year,
         "ElementResolver": {"ResolutionMap": {}},
-        "Inputs": [],
-        "Outputs": [],
+        "Inputs": [
+            player_input(node, label, node["Description"]) for _, node, label in settings
+        ],
+        "Outputs": [player_output(watch, "Results", "What was found, where the report was written, and what was purged")],
         "Nodes": nodes,
         "Connectors": connectors,
         "Dependencies": [],
@@ -320,6 +350,9 @@ def build_graph(revit_year, revit_label, script_source):
             "ConnectorPins": [],
             "NodeViews": node_views,
             "Annotations": annotations,
+            "X": 60.0,
+            "Y": 40.0,
+            "Zoom": 0.75,
         },
     }
 
